@@ -1,0 +1,133 @@
+const mongoose = require('mongoose');
+
+const orderSchema = new mongoose.Schema(
+  {
+    orderNumber: {
+      type: String,
+      unique: true,
+      required: true
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User is required']
+    },
+    tableNumber: {
+      type: Number,
+      default: null,
+      min: [1, 'Table number must be at least 1']
+    },
+    items: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'OrderItem'
+      }
+    ],
+    subtotal: {
+      type: Number,
+      default: 0,
+      min: [0, 'Subtotal cannot be negative']
+    },
+    tax: {
+      type: Number,
+      default: 0,
+      min: [0, 'Tax cannot be negative']
+    },
+    discountPercent: {
+      type: Number,
+      default: 0,
+      min: [0, 'Discount cannot be less than 0'],
+      max: [100, 'Discount cannot be more than 100']
+    },
+    discountAmount: {
+      type: Number,
+      default: 0,
+      min: [0, 'Discount amount cannot be negative']
+    },
+    deliveryFee: {
+      type: Number,
+      default: 0,
+      min: [0, 'Delivery fee cannot be negative']
+    },
+    total: {
+      type: Number,
+      required: [true, 'Total is required'],
+      min: [0, 'Total cannot be negative']
+    },
+    status: {
+      type: String,
+      enum: {
+        values: ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERING', 'DELIVERED', 'CANCELLED'],
+        message: 'Status must be one of: PENDING, CONFIRMED, PREPARING, READY, DELIVERING, DELIVERED, CANCELLED'
+      },
+      default: 'PENDING'
+    },
+    paymentStatus: {
+      type: String,
+      enum: {
+        values: ['UNPAID', 'PAID', 'PARTIAL', 'REFUNDED'],
+        message: 'Payment status must be one of: UNPAID, PAID, PARTIAL, REFUNDED'
+      },
+      default: 'UNPAID'
+    },
+    paymentMethod: {
+      type: String,
+      enum: {
+        values: ['CASH', 'CARD', 'ONLINE', 'WALLET'],
+        message: 'Payment method must be one of: CASH, CARD, ONLINE, WALLET'
+      },
+      default: 'CASH'
+    },
+    notes: {
+      type: String,
+      maxlength: [500, 'Notes must not exceed 500 characters'],
+      default: null
+    },
+    deliveryAddress: {
+      type: String,
+      maxlength: [200, 'Delivery address must not exceed 200 characters'],
+      default: null
+    },
+    preparedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Staff'
+    },
+    servedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Staff'
+    },
+    rating: {
+      type: Number,
+      default: null,
+      min: [1, 'Rating must be at least 1'],
+      max: [5, 'Rating cannot exceed 5']
+    },
+    review: {
+      type: String,
+      maxlength: [500, 'Review must not exceed 500 characters'],
+      default: null
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      select: false
+    },
+    completedAt: {
+      type: Date,
+      default: null
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Index for query optimization
+orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ user: 1 });
+orderSchema.index({ status: 1 });
+orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ isDeleted: 1 });
+orderSchema.index({ createdAt: -1 });
+
+module.exports = mongoose.model('Order', orderSchema);

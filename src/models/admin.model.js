@@ -1,0 +1,79 @@
+const mongoose = require('mongoose');
+
+const adminSchema = new mongoose.Schema(
+  {
+    username: {
+      type: String,
+      required: [true, 'Username is required'],
+      unique: true,
+      trim: true,
+      minlength: [3, 'Username must be at least 3 characters'],
+      maxlength: [50, 'Username must not exceed 50 characters'],
+      match: [/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen']
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters'],
+      select: false
+    },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
+    },
+    fullName: {
+      type: String,
+      required: [true, 'Full name is required'],
+      minlength: [2, 'Full name must be at least 2 characters'],
+      maxlength: [100, 'Full name must not exceed 100 characters']
+    },
+    phone: {
+      type: String,
+      required: [true, 'Phone number is required'],
+      match: [/^[0-9]{10,11}$/, 'Phone number must be 10-11 digits'],
+      unique: true
+    },
+    address: {
+      type: String,
+      required: [true, 'Address is required'],
+      maxlength: [200, 'Address must not exceed 200 characters']
+    },
+    role: {
+      type: String,
+      default: 'ADMIN',
+      enum: {
+        values: ['ADMIN'],
+        message: 'Role must be ADMIN'
+      }
+    },
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+      select: false
+    },
+    createdBy: {
+      type: String,
+      default: 'system'
+    },
+    updatedBy: {
+      type: String
+    }
+  },
+  {
+    timestamps: true
+  }
+);
+
+// Index for query optimization
+adminSchema.index({ username: 1 });
+adminSchema.index({ email: 1 });
+adminSchema.index({ isDeleted: 1 });
+
+module.exports = mongoose.model('Admin', adminSchema);
