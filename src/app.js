@@ -2,8 +2,12 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./config/database');
+const { securityHeaders } = require('./middleware/security');
 
 const app = express();
+
+// Middleware - Security headers
+app.use(securityHeaders);
 
 // Middleware
 app.use(cors());

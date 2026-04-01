@@ -7,13 +7,13 @@ const { comparePassword } = require('../utils/password');
  */
 const login = async (username, password) => {
   // Find admin
-  let user = await Admin.findOne({ username });
-  let role = 'admin';
+  let user = await Admin.findOne({ username }).select('+password');
+  let role = 'ADMIN';
 
   // If not found, find staff
   if (!user) {
-    user = await Staff.findOne({ username });
-    role = 'staff';
+    user = await Staff.findOne({ username }).select('+password');
+    role = 'STAFF';
   }
 
   // Check if user exists
@@ -27,8 +27,8 @@ const login = async (username, password) => {
     throw new Error('Invalid username or password');
   }
 
-  // For staff, check status
-  if (role === 'staff' && user.status === 'inactive') {
+  // For staff, check if active
+  if (role === 'STAFF' && !user.isActive) {
     throw new Error('Your account is inactive');
   }
 
@@ -60,7 +60,7 @@ const getCurrentUser = async (userInfo) => {
   const { id, role } = userInfo;
   let user;
 
-  if (role === 'admin') {
+  if (role === 'ADMIN') {
     user = await Admin.findById(id);
   } else {
     user = await Staff.findById(id);
