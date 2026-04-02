@@ -2,21 +2,6 @@ const mongoose = require('mongoose');
 
 const staffSchema = new mongoose.Schema(
   {
-    username: {
-      type: String,
-      required: [true, 'Username is required'],
-      unique: true,
-      trim: true,
-      minlength: [3, 'Username must be at least 3 characters'],
-      maxlength: [50, 'Username must not exceed 50 characters'],
-      match: [/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen']
-    },
-    password: {
-      type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
-      select: false
-    },
     email: {
       type: String,
       required: [true, 'Email is required'],
@@ -77,7 +62,7 @@ const staffSchema = new mongoose.Schema(
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Admin',
-      required: true
+      default: null  // null for system-created accounts (e.g., POS)
     },
     updatedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -98,7 +83,6 @@ const staffSchema = new mongoose.Schema(
 );
 
 // Index for query optimization
-staffSchema.index({ username: 1 });
 staffSchema.index({ email: 1 });
 staffSchema.index({ isDeleted: 1 });
 staffSchema.index({ position: 1 });

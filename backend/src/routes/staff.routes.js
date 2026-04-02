@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const staffController = require('../controllers/staff.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 /**
  * GET /api/staff
@@ -18,15 +19,10 @@ router.get('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) 
 
 /**
  * GET /api/staff/:id
- * Get staff member by ID - requires admin or staff self
+ * Get staff member by ID - requires admin
  */
-router.get('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
-  try {
-    // Staff can only view their own profile
-    if (req.user.role === 'STAFF' && req.user.id !== req.params.id) {
-      return res.status(403).json({ message: 'Access denied' });
-    }
-    
+router.get('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+  try {  
     const result = await staffController.getStaffById(req.params.id);
     if (!result) {
       return res.status(404).json({ message: 'Staff not found' });
@@ -39,12 +35,13 @@ router.get('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req,
 
 /**
  * POST /api/staff
- * Create new staff account - requires admin
- * Body: { username, password, email, phone, fullName, position, salary }
+ * Create new staff profile - requires admin
+ * Body: form-data { email, phone, fullName, position, salary, address?, avatar? }
+ * Note: Staff use hardcoded POS account for login, no individual credentials
  */
-router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+router.post('/', checkLogin, checkRole('ADMIN'), upload.single('avatar'), async function (req, res, next) {
   try {
-    const result = await staffController.createStaff(req.body, req.user.id);
+    const result = await staffController.createStaff(req.body, req.user.id, req.file);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -55,7 +52,7 @@ router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next)
  * PUT /api/staff/:id
  * Update staff profile - requires admin or staff self
  */
-router.put('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
+router.patch('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
   try {
     // Staff can only update their own profile
     if (req.user.role === 'STAFF' && req.user.id !== req.params.id) {
