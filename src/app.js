@@ -24,6 +24,7 @@ app.use('/api/staff', require('./routes/staff.routes'));
 app.use('/api/cart', require('./routes/cart.routes'));
 app.use('/api/order', require('./routes/order.routes'));
 app.use('/api/review', require('./routes/review.routes'));
+app.use('/api/upload', require('./routes/upload.routes'));
 
 
 app.get('/api/health', (req, res) => {
