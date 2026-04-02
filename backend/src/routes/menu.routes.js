@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const menuController = require('../controllers/menu.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 /**
  * GET /api/menu
@@ -35,11 +36,11 @@ router.get('/:id', async function (req, res, next) {
 /**
  * POST /api/menu
  * Create new menu item - requires admin
- * Body: { name, description, ingredients, price, category, prepTime, isActive }
+ * Body: form-data { name, description, ingredients?, price, category, image? }
  */
-router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+router.post('/', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
-    const result = await menuController.createMenu(req.body);
+    const result = await menuController.createMenu(req.body, req.user.id, req.file);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -49,10 +50,11 @@ router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next)
 /**
  * PUT /api/menu/:id
  * Update menu item - requires admin
+ * Body: form-data { name?, description?, ingredients?, price?, category?, preparationTime?, isActive?, image? }
  */
-router.put('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+router.put('/:id', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
-    const result = await menuController.updateMenu(req.params.id, req.body);
+    const result = await menuController.updateMenu(req.params.id, req.body, req.user.id, req.file);
     if (!result) {
       return res.status(404).json({ message: 'Menu not found' });
     }

@@ -16,7 +16,6 @@ const menuSchema = new mongoose.Schema(
     },
     ingredients: {
       type: String,
-      required: [true, 'Ingredients are required'],
       maxlength: [500, 'Ingredients must not exceed 500 characters']
     },
     price: {

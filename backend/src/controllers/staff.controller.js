@@ -4,17 +4,29 @@ const bcrypt = require('bcrypt');
 
 // Get all staff
 exports.getAllStaff = async () => {
-  const staff = await Staff.find({ isDeleted: false }).select('-password');
-  return staff;
+  try {
+    const staff = await Staff.find({ isDeleted: false })
+      .select('fullName email phone position salary address avatar role isActive startDate');
+    return staff;
+  } catch (error) {
+    console.error('[STAFF] Error fetching staff:', error);
+    throw error;
+  }
 };
 
 // Get staff by ID
 exports.getStaffById = async (id) => {
-  const staff = await Staff.findById(id).select('-password');
-  if (staff && !staff.isDeleted) {
-    return staff;
+  try {
+    const staff = await Staff.findById(id)
+      .select('fullName email phone position salary address avatar role isActive startDate');
+    if (staff && !staff.isDeleted) {
+      return staff;
+    }
+    return null;
+  } catch (error) {
+    console.error('[STAFF] Error fetching staff by ID:', error);
+    throw error;
   }
-  return null;
 };
 
 // Create new staff - only profile without login credentials
@@ -64,8 +76,8 @@ exports.createStaff = async (data, adminId, file) => {
 };
 
 // Update staff
-exports.updateStaff = async (id, data) => {
-  const allowedFields = ['email', 'phone', 'fullName', 'position', 'salary', 'status'];
+exports.updateStaff = async (id, data, file) => {
+  const allowedFields = ['email', 'phone', 'fullName', 'position', 'salary', 'address', 'status'];
   const updateData = {};
   
   allowedFields.forEach(field => {
@@ -74,7 +86,48 @@ exports.updateStaff = async (id, data) => {
     }
   });
 
-  const staff = await Staff.findByIdAndUpdate(id, updateData, { new: true }).select('-password');
+  // Handle avatar upload
+  if (file) {
+    try {
+      // Get current staff to find old avatar
+      const staff = await Staff.findById(id);
+      
+      // Delete old avatar from Cloudinary if exists
+      if (staff && staff.avatar) {
+        try {
+          const url = staff.avatar;
+          const publicId = url.split('/').slice(-1)[0].split('.')[0];
+          await cloudinary.uploader.destroy(`restaurant/staff/${publicId}`);
+        } catch (err) {
+          console.log('Could not delete old avatar:', err.message);
+        }
+      }
+
+      // Upload new avatar
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: 'restaurant/staff',
+            resource_type: 'auto',
+            public_id: `staff_${Date.now()}`,
+            format: 'jpg',
+            quality: 'auto'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        );
+        uploadStream.end(file.buffer);
+      });
+      updateData.avatar = uploadResult.secure_url;
+    } catch (uploadError) {
+      throw new Error('Avatar upload failed: ' + uploadError.message);
+    }
+  }
+
+  const staff = await Staff.findByIdAndUpdate(id, updateData, { new: true })
+    .select('fullName email phone position salary address avatar role isActive startDate');
   return staff;
 };
 

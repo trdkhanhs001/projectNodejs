@@ -1,0 +1,216 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
+}
+
+.login-box {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-header h1 {
+  margin: 0 0 10px 0;
+  color: #2c3e50;
+  font-size: 28px;
+}
+
+.login-header p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.form-group input {
+  padding: 12px 15px;
+  border: 2px solid #ecf0f1;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group input:disabled {
+  background-color: #ecf0f1;
+  cursor: not-allowed;
+}
+
+/* Password input với toggle button */
+.password-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-group input {
+  width: 100%;
+  padding-right: 45px;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 8px;
+  color: #7f8c8d;
+  transition: color 0.3s;
+}
+
+.toggle-password:hover {
+  color: #2c3e50;
+}
+
+/* Alert */
+.alert-error {
+  background-color: #f8d7da;
+  border-color: #dc3545 !important;
+  color: #721c24;
+  padding: 12px 15px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+/* Login button */
+.login-btn {
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.login-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.spinner-small {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Test accounts */
+.test-accounts {
+  background-color: #e8f4f8;
+  border-left: 4px solid #17a2b8;
+  padding: 15px;
+  border-radius: 6px;
+  margin-top: 20px;
+  font-size: 13px;
+}
+
+.test-accounts p {
+  margin: 0 0 10px 0;
+  font-weight: 600;
+  color: #0c5460;
+}
+
+.test-accounts ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.test-accounts li {
+  margin-bottom: 6px;
+  color: #0c5460;
+}
+
+.test-accounts li:last-child {
+  margin-bottom: 0;
+}
+
+/* Footer */
+.login-footer {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;border-top: 1px solid #ecf0f1;
+}
+
+.login-footer p {
+  margin: 0;
+  color: #95a5a6;
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .login-box {
+    padding: 30px 20px;
+  }
+
+  .login-header h1 {
+    font-size: 24px;
+  }
+
+  .test-accounts {
+    display: none;
+  }
+}

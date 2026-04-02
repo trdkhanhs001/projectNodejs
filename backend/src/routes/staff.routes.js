@@ -52,14 +52,14 @@ router.post('/', checkLogin, checkRole('ADMIN'), upload.single('avatar'), async 
  * PUT /api/staff/:id
  * Update staff profile - requires admin or staff self
  */
-router.patch('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
+router.patch('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), upload.single('avatar'), async function (req, res, next) {
   try {
     // Staff can only update their own profile
     if (req.user.role === 'STAFF' && req.user.id !== req.params.id) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    const result = await staffController.updateStaff(req.params.id, req.body);
+    const result = await staffController.updateStaff(req.params.id, req.body, req.file);
     if (!result) {
       return res.status(404).json({ message: 'Staff not found' });
     }

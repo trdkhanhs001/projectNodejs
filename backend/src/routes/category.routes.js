@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const categoryController = require('../controllers/category.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 
 /**
  * GET /api/category
@@ -35,10 +36,11 @@ router.get('/:id', async function (req, res, next) {
 /**
  * POST /api/category
  * Create new category - requires admin
+ * Body: form-data { name, description?, image?, displayOrder?, isActive? }
  */
-router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+router.post('/', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
-    const result = await categoryController.createCategory(req.body);
+    const result = await categoryController.createCategory(req.body, req.user.id, req.file);
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -48,10 +50,11 @@ router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next)
 /**
  * PUT /api/category/:id
  * Update category - requires admin
+ * Body: form-data { name?, description?, displayOrder?, isActive?, image? }
  */
-router.put('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+router.put('/:id', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
-    const result = await categoryController.updateCategory(req.params.id, req.body);
+    const result = await categoryController.updateCategory(req.params.id, req.body, req.user.id, req.file);
     if (!result) {
       return res.status(404).json({ message: 'Category not found' });
     }
