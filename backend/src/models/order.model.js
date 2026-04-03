@@ -12,11 +12,36 @@ const orderSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'User is required']
     },
+
+    // ✅ THÊM MỚI: Phân biệt đặt online hay tại quán
+    orderType: {
+      type: String,
+      enum: {
+        values: ['ONLINE', 'DINE_IN'],
+        message: 'Order type must be one of: ONLINE, DINE_IN'
+      },
+      required: [true, 'Order type is required']
+    },
+
+    // Chỉ dùng khi orderType === 'DINE_IN'
     tableNumber: {
       type: Number,
       default: null,
       min: [1, 'Table number must be at least 1']
     },
+
+    // Chỉ dùng khi orderType === 'ONLINE'
+    deliveryAddress: {
+      type: String,
+      maxlength: [200, 'Delivery address must not exceed 200 characters'],
+      default: null
+    },
+    deliveryFee: {
+      type: Number,
+      default: 0,
+      min: [0, 'Delivery fee cannot be negative']
+    },
+
     items: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -43,11 +68,6 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: [0, 'Discount amount cannot be negative']
-    },
-    deliveryFee: {
-      type: Number,
-      default: 0,
-      min: [0, 'Delivery fee cannot be negative']
     },
     total: {
       type: Number,
@@ -81,11 +101,6 @@ const orderSchema = new mongoose.Schema(
     notes: {
       type: String,
       maxlength: [500, 'Notes must not exceed 500 characters'],
-      default: null
-    },
-    deliveryAddress: {
-      type: String,
-      maxlength: [200, 'Delivery address must not exceed 200 characters'],
       default: null
     },
     preparedBy: {
@@ -122,11 +137,34 @@ const orderSchema = new mongoose.Schema(
   }
 );
 
+// ✅ THÊM MỚI: Validation theo orderType
+orderSchema.pre('validate', function (next) {
+  if (this.orderType === 'DINE_IN') {
+    if (!this.tableNumber) {
+      return next(new Error('Đặt tại quán (DINE_IN) phải có tableNumber'));
+    }
+    // DINE_IN không cần deliveryFee
+    this.deliveryFee = 0;
+    this.deliveryAddress = null;
+  }
+
+  if (this.orderType === 'ONLINE') {
+    if (!this.deliveryAddress) {
+      return next(new Error('Đặt online phải có deliveryAddress'));
+    }
+    // ONLINE không cần tableNumber
+    this.tableNumber = null;
+  }
+
+  next();
+});
+
 // Index for query optimization
 orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ user: 1 });
 orderSchema.index({ status: 1 });
 orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ orderType: 1 }); // ✅ THÊM MỚI
 orderSchema.index({ isDeleted: 1 });
 orderSchema.index({ createdAt: -1 });
 
