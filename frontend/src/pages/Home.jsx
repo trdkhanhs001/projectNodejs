@@ -10,6 +10,7 @@ function Home() {
   const [menuList, setMenuList] = useState([])
   const [categoryList, setCategoryList] = useState([])
   const [selectedCategory, setSelectedCategory] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
   const [loading, setLoading] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [showCheckoutModal, setShowCheckoutModal] = useState(false)
@@ -38,9 +39,25 @@ function Home() {
 
   // ✅ Tối ưu filter (tránh lag)
   const filteredMenu = useMemo(() => {
-    if (!selectedCategory) return menuList
-    return menuList.filter(item => item.category?._id === selectedCategory)
-  }, [menuList, selectedCategory])
+    let filtered = menuList
+
+    // Filter by category
+    if (selectedCategory) {
+      filtered = filtered.filter(item => item.category?._id === selectedCategory)
+    }
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase()
+      filtered = filtered.filter(item =>
+        item.name.toLowerCase().includes(term) ||
+        item.description?.toLowerCase().includes(term) ||
+        item.ingredients?.toLowerCase().includes(term)
+      )
+    }
+
+    return filtered
+  }, [menuList, selectedCategory, searchTerm])
 
   const handleAddToCart = (menuItem) => {
     const previousTotal = getTotalItems()
@@ -88,12 +105,74 @@ function Home() {
         {/* Hero */}
         <section className="hero-banner">
           <div className="hero-content">
-            <h1>🍽️ Chào mừng đến nhà hàng</h1>
-            <p>Ăn là ghiền 😎</p>
+            <h1>🍽️ Nhà Hàng ABC</h1>
+            <p>Đồ ăn ngon, phục vụ tận tình - Trải nghiệm ẩm thực tuyệt vời</p>
+            <div className="hero-stats">
+              <div className="stat">
+                <span className="stat-number">500+</span>
+                <span className="stat-label">Món ăn</span>
+              </div>
+              <div className="stat">
+                <span className="stat-number">1000+</span>
+                <span className="stat-label">Khách hàng</span>
+              </div>
+              <div className="stat">
+                <span className="stat-number">5⭐</span>
+                <span className="stat-label">Đánh giá</span>
+              </div>
+            </div>
+          </div>
+          <div className="hero-image">
+            <img src="/hero-food.jpg" alt="Delicious food" onError={(e) => e.target.style.display = 'none'} />
           </div>
         </section>
 
         <div className="menu-content">
+          {/* Featured Items */}
+          {menuList.length > 0 && (
+            <section className="featured-section">
+              <h2>⭐ Món Ăn Nổi Bật</h2>
+              <div className="featured-grid">
+                {menuList.slice(0, 4).map(item => (
+                  <div key={item._id} className="featured-card" onClick={() => handleAddToCart(item)}>
+                    <div className="featured-image">
+                      <img
+                        src={item.image || '/no-image.png'}
+                        alt={item.name}
+                        onError={(e) => (e.target.src = '/no-image.png')}
+                      />
+                    </div>
+                    <div className="featured-info">
+                      <h3>{item.name}</h3>
+                      <p className="featured-price">{item.price?.toLocaleString()} đ</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Search Bar */}
+          <div className="search-section">
+            <div className="search-container">
+              <input
+                type="text"
+                placeholder="🔍 Tìm kiếm món ăn..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+              {searchTerm && (
+                <button
+                  className="clear-search"
+                  onClick={() => setSearchTerm('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Category */}
           <aside className="category-filter">
             <h3>📂 Danh mục</h3>

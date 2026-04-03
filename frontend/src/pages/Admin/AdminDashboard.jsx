@@ -6,50 +6,26 @@ import './AdminDashboard.css'
 
 function AdminDashboard() {
   // State để lưu trữ thống kê
-  const [stats, setStats] = useState({
-    totalStaff: 0,
-    totalMenuItems: 0,
-    totalOrders: 0,
-    totalRevenue: 0
-  })
-
+  const [dashboardStats, setDashboardStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [dateRange, setDateRange] = useState('month')
 
   // Lấy dữ liệu thống kê từ API
   useEffect(() => {
     fetchStats()
-  }, [])
+  }, [dateRange])
 
   const fetchStats = async () => {
     try {
-      // Lấy dữ liệu từ các endpoint khác nhau
-      const [staffRes, menuRes, orderRes] = await Promise.all([
-        apiClient.get('/staff'),
-        apiClient.get('/menu'),
-        apiClient.get('/order')
-      ])
-
-      // Tính tổng doanh thu từ các đơn hàng đã hoàn thành
-      const totalRevenue = orderRes.data
-        .filter(order => order.status === 'COMPLETED')
-        .reduce((sum, order) => sum + (order.totalPrice || 0), 0)
-
-      setStats({
-        totalStaff: staffRes.data.length,
-        totalMenuItems: menuRes.data.length,
-        totalOrders: orderRes.data.length,
-        totalRevenue: totalRevenue
+      setLoading(true)
+      const response = await apiClient.get('/admin/dashboard/stats', {
+        params: { range: dateRange }
       })
-      setLoading(false)
+      setDashboardStats(response.data)
     } catch (err) {
       console.error('Error fetching stats:', err)
-      // Dùng giá trị mặc định nếu lỗi
-      setStats({
-        totalStaff: 0,
-        totalMenuItems: 0,
-        totalOrders: 0,
-        totalRevenue: 0
-      })
+      alert('Lỗi load thống kê')
+    } finally {
       setLoading(false)
     }
   }
@@ -57,59 +33,130 @@ function AdminDashboard() {
   if (loading) {
     return (
       <AdminLayout>
-        <div className="spinner"></div>
+        <div className="loading">Đang tải thống kê...</div>
       </AdminLayout>
     )
   }
 
+  if (!dashboardStats) {
+    return (
+      <AdminLayout>
+        <div className="error">Không thể load dữ liệu</div>
+      </AdminLayout>
+    )
+  }
+
+  const stats = dashboardStats
+
   return (
     <AdminLayout>
       <div className="dashboard">
-        <h2>Bảng điều khiển</h2>
+        <div className="dashboard-header">
+          <h2>📊 Bảng Điều Khiển</h2>
+          <select
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="date-range-selector"
+          >
+            <option value="day">Hôm nay</option>
+            <option value="week">Tuần này</option>
+            <option value="month">Tháng này</option>
+            <option value="year">Năm này</option>
+          </select>
+        </div>
 
-        {/* Stats Cards */}
+        {/* Main Stats Cards */}
         <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-icon">👥</div>
-            <div className="stat-content">
-              <h3>Nhân viên</h3>
-              <p className="stat-value">{stats.totalStaff}</p>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">🍽️</div>
-            <div className="stat-content">
-              <h3>Món ăn</h3>
-              <p className="stat-value">{stats.totalMenuItems}</p>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-icon">📦</div>
-            <div className="stat-content">
-              <h3>Đơn hàng</h3>
-              <p className="stat-value">{stats.totalOrders}</p>
-            </div>
-          </div>
-
-          <div className="stat-card">
+          <div className="stat-card revenue">
             <div className="stat-icon">💰</div>
             <div className="stat-content">
-              <h3>Doanh thu</h3>
-              <p className="stat-value">
-                {(stats.totalRevenue / 1000000).toFixed(1)}M
-              </p>
+              <h3>Doanh Thu</h3>
+              <p className="stat-value">{stats.revenue.total.toLocaleString('vi-VN')} đ</p>
+              <small>Trung bình: {stats.revenue.average.toLocaleString('vi-VN')} đ/đơn</small>
+            </div>
+          </div>
+
+          <div className="stat-card orders">
+            <div className="stat-icon">📦</div>
+            <div className="stat-content">
+              <h3>Đơn Hàng</h3>
+              <p className="stat-value">{stats.orders.total}</p>
+              <small>✅ {stats.orders.completed} | ❌ {stats.orders.cancelled}</small>
+            </div>
+          </div>
+
+          <div className="stat-card users">
+            <div className="stat-icon">👥</div>
+            <div className="stat-content">
+              <h3>Người Dùng Mới</h3>
+              <p className="stat-value">{stats.users.new}</p>
+            </div>
+          </div>
+
+          <div className="stat-card pending">
+            <div className="stat-icon">⏳</div>
+            <div className="stat-content">
+              <h3>Đợi Xử Lý</h3>
+              <p className="stat-value">{stats.orders.byStatus.pending + stats.orders.byStatus.confirmed}</p>
             </div>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="card" style={{ marginTop: '30px' }}>
-          <h3>🔄 Hoạt động gần đây</h3>
-          <p style={{ color: '#7f8c8d', marginTop: '10px' }}>
-            ✅ Dữ liệu đang được cập nhật từ API backend
-          </p>
+        {/* Order Status Breakdown */}
+        <div className="status-breakdown">
+          <h3>📈 Trạng Thái Đơn Hàng</h3>
+          <div className="status-grid">
+            <div className="status-item pending-item">
+              <div className="status-label">⏳ Chờ Xác Nhận</div>
+              <div className="status-value">{stats.orders.byStatus.pending}</div>
+            </div>
+            <div className="status-item confirmed-item">
+              <div className="status-label">✔️ Đã Xác Nhận</div>
+              <div className="status-value">{stats.orders.byStatus.confirmed}</div>
+            </div>
+            <div className="status-item preparing-item">
+              <div className="status-label">🍳 Đang Chuẩn Bị</div>
+              <div className="status-value">{stats.orders.byStatus.preparing}</div>
+            </div>
+            <div className="status-item ready-item">
+              <div className="status-label">✅ Sẵn Sàng</div>
+              <div className="status-value">{stats.orders.byStatus.ready}</div>
+            </div>
+            <div className="status-item delivered-item">
+              <div className="status-label">🚚 Đã Giao</div>
+              <div className="status-value">{stats.orders.byStatus.delivered}</div>
+            </div>
+            <div className="status-item completed-item">
+              <div className="status-label">✓ Hoàn Thành</div>
+              <div className="status-value">{stats.orders.byStatus.completed}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Top Menus */}
+        {stats.topMenus && stats.topMenus.length > 0 && (
+          <div className="top-menus-section">
+            <h3>🔝 Top 5 Món Bán Chạy</h3>
+            <div className="top-menus-list">
+              {stats.topMenus.map((item, idx) => (
+                <div key={idx} className="top-menu-item">
+                  <span className="menu-rank">#{idx + 1}</span>
+                  <div className="menu-info">
+                    <p className="menu-name">{item.menu?.name || 'N/A'}</p>
+                    <small className="menu-price">{item.menu?.price.toLocaleString('vi-VN')} đ</small>
+                  </div>
+                  <div className="menu-qty">
+                    <strong>{item.quantity}</strong> <span>suất</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Info Card */}
+        <div className="info-card">
+          📌 <strong>Thống kê từ:</strong> {new Date(stats.period.start).toLocaleDateString('vi-VN')} đến {new Date(stats.period.end).toLocaleDateString('vi-VN')}
         </div>
       </div>
     </AdminLayout>

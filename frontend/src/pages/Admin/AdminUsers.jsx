@@ -1,113 +1,106 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/Admin/AdminLayout'
 import apiClient from '../../utils/apiClient'
-import './AdminStaff.css'
+import './AdminUsers.css'
 
-function AdminStaff() {
-  const [staff, setStaff] = useState([])
+function AdminUsers() {
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  
-  // Form States
   const [showForm, setShowForm] = useState(false)
-  const [editingStaff, setEditingStaff] = useState(null)
+  const [editingUser, setEditingUser] = useState(null)
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     fullName: '',
-    phone: ''
+    phone: '',
+    role: 'USER'
   })
 
-  // Fetch staff
+  // Fetch users
   useEffect(() => {
-    fetchStaff()
-  }, [currentPage, searchQuery])
+    fetchUsers()
+  }, [currentPage, searchQuery, roleFilter])
 
-  const fetchStaff = async () => {
+  const fetchUsers = async () => {
     try {
       setLoading(true)
       const params = {
         page: currentPage,
-        limit: 10,
-        role: 'STAFF'
+        limit: 10
       }
       if (searchQuery) params.search = searchQuery
+      if (roleFilter) params.role = roleFilter
 
       const response = await apiClient.get('/admin/users', { params })
-      setStaff(response.data.users)
+      setUsers(response.data.users)
       setTotalPages(response.data.pages)
     } catch (err) {
-      console.error('Error fetching staff:', err)
-      alert('Lỗi load danh sách nhân viên')
+      console.error('Error fetching users:', err)
+      alert('Lỗi load dữ liệu người dùng')
     } finally {
       setLoading(false)
     }
   }
 
-  // Handle create/update
+  // Handle create/update user
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.fullName || !formData.email) {
-      alert('Vui lòng điền đầy đủ thông tin')
-      return
-    }
-
     try {
-      if (editingStaff) {
+      if (editingUser) {
+        // Update user - don't send password
         const { password, ...updateData } = formData
-        await apiClient.put(`/admin/users/${editingStaff._id}`, updateData)
-        alert('Cập nhật nhân viên thành công')
+        await apiClient.put(`/admin/users/${editingUser._id}`, updateData)
+        alert('Cập nhật người dùng thành công')
       } else {
-        if (!formData.password) {
-          alert('Vui lòng nhập mật khẩu')
-          return
-        }
-        const staffData = { ...formData, role: 'STAFF' }
-        await apiClient.post('/admin/users', staffData)
-        alert('Thêm nhân viên thành công')
+        // Create new user
+        await apiClient.post('/admin/users', formData)
+        alert('Tạo người dùng thành công')
       }
-      
+
       setShowForm(false)
       setFormData({
         username: '',
         email: '',
         password: '',
         fullName: '',
-        phone: ''
+        phone: '',
+        role: 'USER'
       })
-      setCurrentPage(1)
-      fetchStaff()
+      fetchUsers()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi xử lý')
+      alert(err.response?.data?.message || 'Lỗi xử lý yêu cầu')
     }
   }
 
-  // Handle delete
-  const handleDelete = async (staffId) => {
-    if (!confirm('Bạn chắc chắn muốn xóa nhân viên này?')) return
+  // Handle delete user
+  const handleDelete = async (userId) => {
+    if (!confirm('Bạn chắc chắn muốn xóa người dùng này?')) return
 
     try {
-      await apiClient.delete(`/admin/users/${staffId}`)
-      alert('Xóa nhân viên thành công')
-      fetchStaff()
+      await apiClient.delete(`/admin/users/${userId}`)
+      alert('Xóa người dùng thành công')
+      fetchUsers()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi xóa')
+      alert(err.response?.data?.message || 'Lỗi xóa người dùng')
     }
   }
 
-  // Handle edit
-  const handleEdit = (s) => {
-    setEditingStaff(s)
+  // Handle edit user
+  const handleEdit = (user) => {
+    setEditingUser(user)
     setFormData({
-      username: s.username,
-      email: s.email,
+      username: user.username,
+      email: user.email,
       password: '',
-      fullName: s.fullName,
-      phone: s.phone || ''
+      fullName: user.fullName,
+      phone: user.phone || '',
+      role: user.role
     })
     setShowForm(true)
   }
@@ -115,31 +108,32 @@ function AdminStaff() {
   // Handle close form
   const handleCloseForm = () => {
     setShowForm(false)
-    setEditingStaff(null)
+    setEditingUser(null)
     setFormData({
       username: '',
       email: '',
       password: '',
       fullName: '',
-      phone: ''
+      phone: '',
+      role: 'USER'
     })
   }
 
   return (
     <AdminLayout>
-      <div className="admin-staff">
-        <div className="staff-header">
-          <h2>💼 Quản Lý Nhân Viên</h2>
+      <div className="admin-users">
+        <div className="users-header">
+          <h2>👥 Quản Lý Người Dùng</h2>
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-            ➕ Thêm Nhân Viên
+            ➕ Thêm Người Dùng
           </button>
         </div>
 
-        {/* Filter */}
+        {/* Filters */}
         <div className="filter-section">
           <input
             type="text"
-            placeholder="🔍 Tìm kiếm nhân viên..."
+            placeholder="🔍 Tìm kiếm (tên, email, username)..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value)
@@ -147,44 +141,63 @@ function AdminStaff() {
             }}
             className="search-input"
           />
+          <select
+            value={roleFilter}
+            onChange={(e) => {
+              setRoleFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="role-filter"
+          >
+            <option value="">Tất cả vai trò</option>
+            <option value="USER">Khách hàng</option>
+            <option value="STAFF">Nhân viên</option>
+            <option value="ADMIN">Quản trị viên</option>
+          </select>
         </div>
 
-        {/* Staff Table */}
+        {/* Users Table */}
         {loading ? (
           <div className="loading">Đang tải...</div>
         ) : (
           <>
-            <div className="staff-table-container">
-              <table className="staff-table">
+            <div className="users-table-container">
+              <table className="users-table">
                 <thead>
                   <tr>
                     <th>Tên Đăng Nhập</th>
                     <th>Tên Đầy Đủ</th>
                     <th>Email</th>
                     <th>Điện Thoại</th>
+                    <th>Vai Trò</th>
                     <th>Ngày Tạo</th>
                     <th>Hành Động</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {staff.map(s => (
-                    <tr key={s._id}>
-                      <td><strong>{s.username}</strong></td>
-                      <td>{s.fullName}</td>
-                      <td>{s.email}</td>
-                      <td>{s.phone || '—'}</td>
-                      <td>{new Date(s.createdAt).toLocaleDateString('vi-VN')}</td>
+                  {users.map(user => (
+                    <tr key={user._id}>
+                      <td>{user.username}</td>
+                      <td>{user.fullName}</td>
+                      <td>{user.email}</td>
+                      <td>{user.phone || '—'}</td>
+                      <td>
+                        <span className={`role-badge role-${user.role.toLowerCase()}`}>
+                          {user.role === 'USER' ? 'Khách hàng' : user.role === 'STAFF' ? 'Nhân viên' : 'Quản trị viên'}
+                        </span>
+                      </td>
+                      <td>{new Date(user.createdAt).toLocaleDateString('vi-VN')}</td>
                       <td>
                         <button
                           className="btn btn-sm btn-info"
-                          onClick={() => handleEdit(s)}
+                          onClick={() => handleEdit(user)}
                           title="Sửa"
                         >
                           ✏️
                         </button>
                         <button
                           className="btn btn-sm btn-danger"
-                          onClick={() => handleDelete(s._id)}
+                          onClick={() => handleDelete(user._id)}
                           title="Xóa"
                         >
                           🗑️
@@ -224,11 +237,11 @@ function AdminStaff() {
           <div className="modal-overlay" onClick={handleCloseForm}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>{editingStaff ? '✏️ Sửa Nhân Viên' : '➕ Thêm Nhân Viên'}</h3>
+                <h3>{editingUser ? '✏️ Sửa Người Dùng' : '➕ Thêm Người Dùng'}</h3>
                 <button className="btn-close" onClick={handleCloseForm}>✕</button>
               </div>
 
-              <form onSubmit={handleSubmit} className="staff-form">
+              <form onSubmit={handleSubmit} className="user-form">
                 <div className="form-group">
                   <label>Tên Đăng Nhập *</label>
                   <input
@@ -236,7 +249,7 @@ function AdminStaff() {
                     value={formData.username}
                     onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                     required
-                    disabled={!!editingStaff}
+                    disabled={!!editingUser}
                   />
                 </div>
 
@@ -250,7 +263,7 @@ function AdminStaff() {
                   />
                 </div>
 
-                {!editingStaff && (
+                {!editingUser && (
                   <div className="form-group">
                     <label>Mật Khẩu *</label>
                     <input
@@ -264,12 +277,11 @@ function AdminStaff() {
                 )}
 
                 <div className="form-group">
-                  <label>Tên Đầy Đủ *</label>
+                  <label>Tên Đầy Đủ</label>
                   <input
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
                   />
                 </div>
 
@@ -282,9 +294,22 @@ function AdminStaff() {
                   />
                 </div>
 
+                <div className="form-group">
+                  <label>Vai Trò *</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    required
+                  >
+                    <option value="USER">Khách hàng</option>
+                    <option value="STAFF">Nhân viên</option>
+                    <option value="ADMIN">Quản trị viên</option>
+                  </select>
+                </div>
+
                 <div className="form-actions">
                   <button type="submit" className="btn btn-primary">
-                    {editingStaff ? 'Cập Nhật' : 'Thêm'}
+                    {editingUser ? 'Cập Nhật' : 'Tạo'}
                   </button>
                   <button type="button" className="btn btn-secondary" onClick={handleCloseForm}>
                     Hủy
@@ -299,4 +324,4 @@ function AdminStaff() {
   )
 }
 
-export default AdminStaff
+export default AdminUsers

@@ -107,6 +107,50 @@ router.put('/:id/payment', checkLogin, checkRole('ADMIN'), async function (req, 
 });
 
 /**
+ * GET /api/order/pending/list
+ * Get pending orders for POS staff - requires staff or admin
+ */
+router.get('/pending/list', checkLogin, checkRole('STAFF', 'ADMIN'), async function (req, res, next) {
+  try {
+    const result = await orderController.getPendingOrders();
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * GET /api/order/stats/dashboard
+ * Get order statistics for dashboard - requires staff or admin
+ */
+router.get('/stats/dashboard', checkLogin, checkRole('STAFF', 'ADMIN'), async function (req, res, next) {
+  try {
+    const result = await orderController.getOrderStats();
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * GET /api/order/filter/status
+ * Get orders by status - requires staff or admin
+ * Query: ?status=PENDING,CONFIRMED,PREPARING
+ */
+router.get('/filter/status', checkLogin, checkRole('STAFF', 'ADMIN'), async function (req, res, next) {
+  try {
+    const { status } = req.query;
+    if (!status) {
+      return res.status(400).json({ message: 'Status parameter required' });
+    }
+    const result = await orderController.getOrdersByStatus(status);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * DELETE /api/order/:id
  * Soft delete order - requires admin
  */

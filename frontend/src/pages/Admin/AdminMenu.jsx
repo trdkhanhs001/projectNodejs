@@ -4,507 +4,342 @@ import apiClient from '../../utils/apiClient'
 import './AdminMenu.css'
 
 function AdminMenu() {
-  const [menuList, setMenuList] = useState([])
-  const [categoryList, setCategoryList] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+  // State Management
+  const [menus, setMenus] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [categories, setCategories] = useState([])
+  
+  // Form States
   const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState(null)
-
+  const [editingMenu, setEditingMenu] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    ingredients: '',
     price: '',
-    category: ''
+    category: '',
+    image: '',
+    isAvailable: true
   })
 
-  const [imageFile, setImageFile] = useState(null)
-  const [previewUrl, setPreviewUrl] = useState(null)
-  
-  // State cho modal xem chi tiết
-  const [showViewModal, setShowViewModal] = useState(false)
-  const [viewingMenu, setViewingMenu] = useState(null)
-
+  // Fetch menus and categories
   useEffect(() => {
-    fetchCategoryList()
-    fetchMenuList()
-  }, [])
+    fetchCategories()
+    fetchMenus()
+  }, [currentPage, searchQuery, categoryFilter])
 
-  // ================= FETCH =================
-  const fetchCategoryList = async () => {
-    try {
-      const res = await apiClient.get('/category')
-      setCategoryList(res.data)
-      // Set default category to first category if available
-      if (res.data.length > 0) {
-        setFormData(prev => ({ ...prev, category: res.data[0]._id }))
-      }
-    } catch (err) {
-      console.error('❌ Lỗi tải danh mục:', err)
-    }
-  }
-
-  const fetchMenuList = async () => {
+  const fetchMenus = async () => {
     try {
       setLoading(true)
-      const res = await apiClient.get('/menu')
-      setMenuList(res.data)
+      const params = {
+        page: currentPage,
+        limit: 10
+      }
+      if (searchQuery) params.search = searchQuery
+      if (categoryFilter) params.category = categoryFilter
+
+      const response = await apiClient.get('/admin/menus', { params })
+      setMenus(response.data.menus)
+      setTotalPages(response.data.pages)
     } catch (err) {
-      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
+      console.error('Error fetching menus:', err)
+      alert('Lỗi load menu')
     } finally {
       setLoading(false)
     }
   }
 
-  // ================= INPUT =================
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+  const fetchCategories = async () => {
+    try {
+      const response = await apiClient.get('/category')
+      setCategories(response.data)
+    } catch (err) {
+      console.error('Error fetching categories:', err)
+    }
   }
 
-  // ================= IMAGE =================
-  const handleImageChange = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    setImageFile(file)
-
-    const reader = new FileReader()
-    reader.onloadend = () => setPreviewUrl(reader.result)
-    reader.readAsDataURL(file)
-  }
-
-  // ================= SUBMIT =================
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
 
     if (!formData.name || !formData.price || !formData.category) {
-      return alert('⚠️ Vui lòng nhập đầy đủ thông tin!')
-    }
-
-    if (formData.price <= 0) {
-      return alert('⚠️ Giá phải lớn hơn 0')
+      alert('Vui lòng điền đầy đủ thông tin')
+      return
     }
 
     try {
-      setSubmitting(true)
-
-      const data = new FormData()
-      data.append('name', formData.name)
-      data.append('description', formData.description)
-      data.append('ingredients', formData.ingredients)
-      data.append('price', formData.price)
-      data.append('category', formData.category)
-
-      if (imageFile) {
-        data.append('image', imageFile)
+      const data = {
+        name: formData.name,
+        description: formData.description,
+        price: parseFloat(formData.price),
+        category: formData.category,
+        image: formData.image,
+        isAvailable: formData.isAvailable
       }
 
-      if (editingId) {
-        // Update
-        await apiClient.put(`/menu/${editingId}`, data)
-        alert('✅ Cập nhật món thành công!')
+      if (editingMenu) {
+        await apiClient.put(`/admin/menus/${editingMenu._id}`, data)
+        alert('Cập nhật menu thành công')
       } else {
-        // Create
-        await apiClient.post('/menu', data)
-        alert('✅ Thêm món thành công!')
+        await apiClient.post('/admin/menus', data)
+        alert('Thêm menu thành công')
       }
 
-      resetForm()
-      fetchMenuList()
-
+      setShowForm(false)
+      setFormData({
+        name: '',
+        description: '',
+        price: '',
+        category: '',
+        image: '',
+        isAvailable: true
+      })
+      setCurrentPage(1)
+      fetchMenus()
     } catch (err) {
-      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
-    } finally {
-      setSubmitting(false)
+      alert(err.response?.data?.message || 'Lỗi xử lý')
     }
   }
 
-  // ================= RESET =================
-  const resetForm = () => {
+  // Handle delete
+  const handleDelete = async (menuId) => {
+    if (!confirm('Bạn chắc chắn muốn xóa menu này?')) return
+
+    try {
+      await apiClient.delete(`/admin/menus/${menuId}`)
+      alert('Xóa menu thành công')
+      fetchMenus()
+    } catch (err) {
+      alert(err.response?.data?.message || 'Lỗi xóa')
+    }
+  }
+
+  // Handle edit
+  const handleEdit = (menu) => {
+    setEditingMenu(menu)
+    setFormData({
+      name: menu.name,
+      description: menu.description,
+      price: menu.price,
+      category: menu.category,
+      image: menu.image,
+      isAvailable: menu.isAvailable
+    })
+    setShowForm(true)
+  }
+
+  // Handle close form
+  const handleCloseForm = () => {
+    setShowForm(false)
+    setEditingMenu(null)
     setFormData({
       name: '',
       description: '',
-      ingredients: '',
       price: '',
-      category: categoryList.length > 0 ? categoryList[0]._id : ''
+      category: '',
+      image: '',
+      isAvailable: true
     })
-    setImageFile(null)
-    setPreviewUrl(null)
-    setEditingId(null)
-    setShowForm(false)
   }
 
-  // ================= DELETE =================
-  const handleDelete = async (id) => {
-    if (!window.confirm('Bạn chắc chắn muốn xóa món này?')) return
-
-    try {
-      await apiClient.delete(`/menu/${id}`)
-      alert('✅ Xóa thành công!')
-      fetchMenuList()
-    } catch (err) {
-      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
-    }
-  }
-
-  // ================= VIEW =================
-  const handleView = (menu) => {
-    setViewingMenu(menu)
-    setShowViewModal(true)
-  }
-
-  const closeViewModal = () => {
-    setShowViewModal(false)
-    setViewingMenu(null)
-  }
-
-  // ================= LOADING =================
-  if (loading) {
-    return (
-      <AdminLayout>
-        <div className="spinner"></div>
-      </AdminLayout>
-    )
-  }
-
-  // ================= UI =================
   return (
     <AdminLayout>
       <div className="admin-menu">
-
-        {/* HEADER */}
         <div className="menu-header">
-          <h2>Quản lý Menu</h2>
-          <button 
-            className="btn btn-primary"
-            onClick={() => {
-              if (showForm) {
-                resetForm()
-              } else {
-                setShowForm(true)
-              }
-            }}
-          >
-            {showForm ? '❌ Hủy' : '➕ Thêm Món Ăn'}
+          <h2>🍽️ Quản Lý Menu</h2>
+          <button className="btn btn-primary" onClick={() => setShowForm(true)}>
+            ➕ Thêm Menu
           </button>
         </div>
 
-        {/* FORM */}
-        {showForm && (
-          <div className="card form-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3>{editingId ? '✏️ Chỉnh sửa Món Ăn' : '➕ Thêm Món Ăn Mới'}</h3>
-              {editingId && (
-                <span style={{ 
-                  backgroundColor: '#3498db', 
-                  color: 'white', 
-                  padding: '5px 10px', 
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: 'bold'
-                }}>
-                  Chế độ chỉnh sửa
-                </span>
-              )}
-            </div>
-
-            <form onSubmit={handleSubmit} className="menu-form">
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Tên *</label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Giá *</label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Danh mục *</label>
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">-- Chọn danh mục --</option>
-                  {categoryList.map(cat => (
-                    <option key={cat._id} value={cat._id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Mô tả</label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Nguyên liệu</label>
-                <textarea
-                  name="ingredients"
-                  value={formData.ingredients}
-                  onChange={handleInputChange}
-                  placeholder="VD: Cà chua, hành tây, tỏi, ..."
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Hình ảnh {editingId && '(Để trống nếu không cần thay đổi)'}</label>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleImageChange} 
-                />
-                {previewUrl && (
-                  <div className="image-preview">
-                    <img src={previewUrl} alt="Preview" />
-                    {editingId && imageFile && (
-                      <p style={{ marginTop: '5px', fontSize: '12px', color: '#27ae60', textAlign: 'center' }}>
-                        ✓ Ảnh mới sẽ thay thế ảnh hiện tại
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <div className="form-actions">
-                <button 
-                  type="submit" 
-                  className="btn btn-success"
-                  disabled={submitting}
-                >
-                  {submitting ? 'Đang lưu...' : (editingId ? '💾 Cập nhật' : '💾 Thêm mới')}
-                </button>
-
-                <button 
-                  type="button" 
-                  className="btn btn-secondary"
-                  onClick={resetForm}
-                >
-                  🚫 Hủy
-                </button>
-              </div>
-
-            </form>
-          </div>
-        )}
-
-        {/* LIST */}
-        <div className="card">
-          <h3>Danh sách ({menuList.length})</h3>
-
-          {menuList.length === 0 ? (
-            <p>Chưa có món</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Ảnh</th>
-                  <th>Tên Món</th>
-                  <th>Danh mục</th>
-                  <th>Nguyên liệu</th>
-                  <th>Giá</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {menuList.map(item => (
-                  <tr key={item._id}>
-                    <td>
-                      <img 
-                        src={item.image || 'https://via.placeholder.com/50'} 
-                        alt={item.name}
-                        className="table-thumbnail"
-                      />
-                    </td>
-                    <td>
-                      <div className="menu-cell">
-                        <strong>{item.name}</strong>
-                        <small style={{ color: '#7f8c8d', display: 'block', marginTop: '4px' }}>
-                          {item.description}
-                        </small>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="category-tag">{item.category?.name || '—'}</span>
-                    </td>
-                    <td>
-                      <small style={{ wordBreak: 'break-word' }}>
-                        {(item.ingredients || '—').substring(0, 50)}
-                        {(item.ingredients?.length || 0) > 50 ? '...' : ''}
-                      </small>
-                    </td>
-                    <td>
-                      <strong style={{ color: '#e74c3c', fontSize: '15px' }}>
-                        {item.price?.toLocaleString()} đ
-                      </strong>
-                    </td>
-                    <td className="action-cell">
-                      <button 
-                        className="btn btn-tiny btn-info"
-                        onClick={() => handleView(item)}
-                        title="Xem chi tiết"
-                      >
-                        👁️
-                      </button>
-                      <button 
-                        className="btn btn-tiny btn-secondary"
-                        onClick={() => {
-                          setFormData({
-                            name: item.name,
-                            description: item.description,
-                            ingredients: item.ingredients || '',
-                            price: item.price,
-                            category: item.category._id
-                          });
-                          setPreviewUrl(item.image);
-                          setShowForm(true);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }}
-                        title="Chỉnh sửa"
-                      >
-                        ✏️
-                      </button>
-                      <button 
-                        className="btn btn-tiny btn-danger"
-                        onClick={() => handleDelete(item._id)}
-                        title="Xóa"
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
+        {/* Filter */}
+        <div className="filter-section">
+          <input
+            type="text"
+            placeholder="🔍 Tìm kiếm menu..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="search-input"
+          />
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value)
+              setCurrentPage(1)
+            }}
+            className="search-input"
+          >
+            <option value="">Tất cả danh mục</option>
+            {categories.map(cat => (
+              <option key={cat._id} value={cat._id}>{cat.name}</option>
+            ))}
+          </select>
         </div>
 
-        {/* Modal xem chi tiết món ăn */}
-        {showViewModal && viewingMenu && (
-          <div className="modal-overlay" onClick={closeViewModal}>
+        {/* Menu Table */}
+        {loading ? (
+          <div className="loading">Đang tải...</div>
+        ) : (
+          <>
+            <div className="menu-table-container">
+              <table className="menu-table">
+                <thead>
+                  <tr>
+                    <th>Hình ảnh</th>
+                    <th>Tên</th>
+                    <th>Danh mục</th>
+                    <th>Giá</th>
+                    <th>Mô tả</th>
+                    <th>Hành Động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {menus.map(menu => (
+                    <tr key={menu._id}>
+                      <td>
+                        <img 
+                          src={menu.image || '🍽️'} 
+                          alt={menu.name}
+                          className="menu-thumb"
+                          onError={(e) => e.target.textContent = '🍽️'}
+                        />
+                      </td>
+                      <td><strong>{menu.name}</strong></td>
+                      <td>{menu.category}</td>
+                      <td><strong style={{color: '#e74c3c'}}>{parseFloat(menu.price).toLocaleString('vi-VN')} đ</strong></td>
+                      <td>{menu.description || '—'}</td>
+                      <td>
+                        <button
+                          className="btn btn-sm btn-info"
+                          onClick={() => handleEdit(menu)}
+                          title="Sửa"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          className="btn btn-sm btn-danger"
+                          onClick={() => handleDelete(menu._id)}
+                          title="Xóa"
+                        >
+                          🗑️
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="pagination">
+                <button
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  className="btn btn-sm"
+                >
+                  ← Trước
+                </button>
+                <span>Trang {currentPage} / {totalPages}</span>
+                <button
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  className="btn btn-sm"
+                >
+                  Sau →
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Form Modal */}
+        {showForm && (
+          <div className="modal-overlay" onClick={handleCloseForm}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h3>🍽️ Chi tiết Món Ăn</h3>
-                <button 
-                  className="btn-close"
-                  onClick={closeViewModal}
-                >
-                  ✕
-                </button>
+                <h3>{editingMenu ? '✏️ Sửa Menu' : '➕ Thêm Menu'}</h3>
+                <button className="btn-close" onClick={handleCloseForm}>✕</button>
               </div>
-              <div className="modal-body">
-                {/* Image Section */}
-                <div className="menu-image-section">
-                  {viewingMenu.image ? (
-                    <img 
-                      src={viewingMenu.image} 
-                      alt={viewingMenu.name}
-                      className="menu-image-large"
+
+              <form onSubmit={handleSubmit} className="menu-form">
+                <div className="form-group">
+                  <label>Tên Menu *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Danh mục *</label>
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    placeholder="Ví dụ: Cơm, Mì, Nước"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Giá (đ) *</label>
+                  <input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    min="0"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Mô tả</label>
+                  <textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows="3"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Hình ảnh URL</label>
+                  <input
+                    type="url"
+                    value={formData.image}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={formData.isAvailable}
+                      onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
                     />
-                  ) : (
-                    <div className="menu-image-large menu-image-placeholder">
-                      <span style={{ fontSize: '60px' }}>🍽️</span>
-                    </div>
-                  )}
-                  <h2 className="menu-name">{viewingMenu.name}</h2>
+                    Có sẵn
+                  </label>
                 </div>
 
-                {/* Price Section */}
-                <div className="menu-price-section">
-                  <p className="menu-price-large">{viewingMenu.price?.toLocaleString()} đ</p>
-                  <span className="menu-category-badge">{viewingMenu.category?.name || '—'}</span>
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary">
+                    {editingMenu ? 'Cập Nhật' : 'Thêm'}
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={handleCloseForm}>
+                    Hủy
+                  </button>
                 </div>
-
-                {/* Info Section */}
-                <div className="menu-info-detail">
-                  <div className="info-item">
-                    <label>📝 Mô tả</label>
-                    <div className="info-value">
-                      {viewingMenu.description || '—'}
-                    </div>
-                  </div>
-
-                  <div className="info-item">
-                    <label>🥘 Nguyên liệu</label>
-                    <div className="info-value">
-                      {viewingMenu.ingredients || '—'}
-                    </div>
-                  </div>
-
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label>⏱️ Thời gian nấu</label>
-                      <div className="info-value">{viewingMenu.preparationTime || '15'} phút</div>
-                    </div>
-
-                    <div className="info-item">
-                      <label>🔥 Calo</label>
-                      <div className="info-value">{viewingMenu.calories || '—'} kcal</div>
-                    </div>
-
-                    <div className="info-item">
-                      <label>⭐ Đánh giá</label>
-                      <div className="info-value">{viewingMenu.rating || '0'} / 5.0</div>
-                    </div>
-
-                    <div className="info-item">
-                      <label>📊 Bán được</label>
-                      <div className="info-value">{viewingMenu.quantitySold || '0'} cái</div>
-                    </div>
-                  </div>
-
-                  <div className="info-features">
-                    {viewingMenu.isVegan && (
-                      <span className="feature-badge vegan">🌿 Ăn chay</span>
-                    )}
-                    {viewingMenu.isSpicy && (
-                      <span className="feature-badge spicy">🌶️ Cay</span>
-                    )}
-                    {viewingMenu.isPopular && (
-                      <span className="feature-badge popular">⭐ Nổi tiếng</span>
-                    )}
-                    {viewingMenu.isActive ? (
-                      <span className="feature-badge active">✓ Hoạt động</span>
-                    ) : (
-                      <span className="feature-badge inactive">✗ Tắt</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  className="btn btn-secondary"
-                  onClick={closeViewModal}
-                >
-                  ✕ Đóng
-                </button>
-              </div>
+              </form>
             </div>
           </div>
         )}

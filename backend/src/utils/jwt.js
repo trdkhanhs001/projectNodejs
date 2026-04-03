@@ -4,10 +4,11 @@ const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
   throw new Error('JWT_SECRET environment variable is required');
 }
-const JWT_EXPIRATION = process.env.JWT_EXPIRE || '7d';
+const JWT_EXPIRATION = process.env.JWT_EXPIRE || '15m'; // Access token: 15 minutes
+const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRE || '7d'; // Refresh token: 7 days
 
 /**
- * Generate JWT token
+ * Generate JWT access token
  * @param {object} payload - Token payload
  * @returns {string} - JWT token
  */
@@ -19,6 +20,33 @@ const generateToken = (payload) => {
   } catch (error) {
     throw new Error('Error generating token: ' + error.message);
   }
+};
+
+/**
+ * Generate refresh token
+ * @param {object} payload - Token payload
+ * @returns {string} - Refresh token
+ */
+const generateRefreshToken = (payload) => {
+  try {
+    return jwt.sign(payload, JWT_SECRET, {
+      expiresIn: REFRESH_TOKEN_EXPIRATION
+    });
+  } catch (error) {
+    throw new Error('Error generating refresh token: ' + error.message);
+  }
+};
+
+/**
+ * Generate both access and refresh tokens
+ * @param {object} payload - Token payload
+ * @returns {object} - { accessToken, refreshToken }
+ */
+const generateTokenPair = (payload) => {
+  return {
+    accessToken: generateToken(payload),
+    refreshToken: generateRefreshToken(payload)
+  };
 };
 
 /**
@@ -34,7 +62,23 @@ const verifyToken = (token) => {
   }
 };
 
+/**
+ * Verify refresh token
+ * @param {string} token - Refresh token
+ * @returns {object} - Decoded token payload
+ */
+const verifyRefreshToken = (token) => {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch (error) {
+    throw new Error('Invalid or expired refresh token: ' + error.message);
+  }
+};
+
 module.exports = {
   generateToken,
-  verifyToken
+  generateRefreshToken,
+  generateTokenPair,
+  verifyToken,
+  verifyRefreshToken
 };

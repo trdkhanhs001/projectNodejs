@@ -47,10 +47,18 @@ function AdminLayout({ children }) {
             </li>
             <li>
               <Link 
+                to="/admin/users" 
+                className={`nav-link ${isActive('/admin/users')}`}
+              >
+                👥 Quản lý Người Dùng
+              </Link>
+            </li>
+            <li>
+              <Link 
                 to="/admin/staff" 
                 className={`nav-link ${isActive('/admin/staff')}`}
               >
-                👥 Quản lý Staff
+                💼 Quản lý Nhân Viên
               </Link>
             </li>
             <li>

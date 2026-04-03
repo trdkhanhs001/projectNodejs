@@ -7,6 +7,7 @@ const Staff = require('../models/staff.model');
 const Menu = require('../models/menu.model');
 const Order = require('../models/order.model');
 const User = require('../models/user.model');
+const OTP = require('../models/otp.model');
 
 // Import password utility
 const { hashPassword } = require('../utils/password');
@@ -60,5 +61,6 @@ module.exports = {
   Staff,
   Menu,
   Order,
-  User
+  User,
+  OTP
 };

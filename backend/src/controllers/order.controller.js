@@ -120,6 +120,17 @@ exports.updateOrderStatus = async (orderId, data, user) => {
     return null;
   }
 
+  // Check valid status for role
+  const validStatuses = {
+    'STAFF': ['CONFIRMED', 'PREPARING', 'READY', 'CANCELLED'],
+    'ADMIN': ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERING', 'DELIVERED', 'CANCELLED']
+  };
+
+  const userValidStatuses = validStatuses[user.role];
+  if (!userValidStatuses || !userValidStatuses.includes(status)) {
+    throw new Error(`Role ${user.role} cannot set status to ${status}`);
+  }
+
   // If updating specific item status
   if (itemId) {
     const orderItem = await OrderItem.findById(itemId);
@@ -131,9 +142,21 @@ exports.updateOrderStatus = async (orderId, data, user) => {
   } else {
     // Update entire order status
     order.status = status;
-    if (status === 'completed') {
+    
+    // Set staff info
+    if (user.role === 'STAFF') {
+      if (status === 'PREPARING') {
+        order.preparedBy = user.id;
+      } else if (status === 'READY' || status === 'DELIVERING') {
+        order.servedBy = user.id;
+      }
+    }
+    
+    // Set completion timestamp
+    if (status === 'DELIVERED' || status === 'READY') {
       order.completedAt = new Date();
     }
+    
     await order.save();
   }
 
@@ -221,4 +244,44 @@ exports.createGuestOrder = async (data) => {
 exports.deleteOrder = async (id) => {
   const order = await Order.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
   return order;
+};
+
+// Get pending orders for POS staff
+exports.getPendingOrders = async () => {
+  const orders = await Order.find({ 
+    status: 'PENDING',
+    isDeleted: false 
+  })
+    .populate('user', 'fullName email phone')
+    .populate('items')
+    .sort({ createdAt: -1 });
+  return orders;
+};
+
+// Get orders by status for POS staff view
+exports.getOrdersByStatus = async (statusFilter) => {
+  const statuses = statusFilter.split(',').map(s => s.trim().toUpperCase());
+  
+  const orders = await Order.find({
+    status: { $in: statuses },
+    isDeleted: false
+  })
+    .populate('user', 'fullName email phone')
+    .populate('items')
+    .sort({ createdAt: -1 });
+  
+  return orders;
+};
+
+// Get order statistics for dashboard
+exports.getOrderStats = async () => {
+  const stats = {
+    total: await Order.countDocuments({ isDeleted: false }),
+    pending: await Order.countDocuments({ status: 'PENDING', isDeleted: false }),
+    confirmed: await Order.countDocuments({ status: 'CONFIRMED', isDeleted: false }),
+    preparing: await Order.countDocuments({ status: 'PREPARING', isDeleted: false }),
+    ready: await Order.countDocuments({ status: 'READY', isDeleted: false }),
+    completed: await Order.countDocuments({ status: 'DELIVERED', isDeleted: false })
+  };
+  return stats;
 };

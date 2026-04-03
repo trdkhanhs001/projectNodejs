@@ -1,6 +1,9 @@
-const { Admin, Staff, User } = require('../config/database');
-const { generateToken } = require('../utils/jwt');
+const { Admin, Staff, User, OTP } = require('../config/database');
+const { generateToken, generateTokenPair, verifyRefreshToken } = require('../utils/jwt');
+const { generateRefreshToken } = require('../utils/jwt');
 const { comparePassword, hashPassword } = require('../utils/password');
+const { generateOTP, validateOTP } = require('../utils/otp');
+const { sendOTP, sendWelcomeEmail } = require('../utils/email');
 
 /**
  * Login - Admin, Staff & User
@@ -38,17 +41,19 @@ const login = async (username, password) => {
     throw new Error('Your account is inactive');
   }
 
-  // Generate token
-  const token = generateToken({
+  // Generate token pair
+  const tokenPayload = {
     id: user._id.toString(),
     username: user.username,
     email: user.email,
     role: role
-  });
+  };
+  const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
 
   return {
     message: 'Login successful',
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user._id,
       username: user.username,
@@ -106,17 +111,19 @@ const loginAdmin = async (username, password) => {
     throw new Error('Invalid admin credentials');
   }
 
-  // Generate token
-  const token = generateToken({
+  // Generate token pair
+  const tokenPayload = {
     id: user._id.toString(),
     username: user.username,
     email: user.email,
     role: 'ADMIN'
-  });
+  };
+  const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
 
   return {
     message: 'Admin login successful',
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user._id,
       username: user.username,
@@ -149,17 +156,19 @@ const loginStaff = async (username, password) => {
     throw new Error('Your account is inactive. Please contact admin.');
   }
 
-  // Generate token
-  const token = generateToken({
+  // Generate token pair
+  const tokenPayload = {
     id: user._id.toString(),
     username: user.username,
     email: user.email,
     role: 'STAFF'
-  });
+  };
+  const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
 
   return {
     message: 'Staff login successful',
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user._id,
       username: user.username,
@@ -187,17 +196,19 @@ const loginUser = async (username, password) => {
     throw new Error('Invalid login credentials');
   }
 
-  // Generate token
-  const token = generateToken({
+  // Generate token pair
+  const tokenPayload = {
     id: user._id.toString(),
     username: user.username,
     email: user.email,
     role: 'USER'
-  });
+  };
+  const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
 
   return {
     message: 'Login successful',
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: user._id,
       username: user.username,
@@ -240,17 +251,19 @@ const registerUser = async (username, email, password, fullName, phone, address 
 
   await newUser.save();
 
-  // Generate token
-  const token = generateToken({
+  // Generate token pair
+  const tokenPayload = {
     id: newUser._id.toString(),
     username: newUser.username,
     email: newUser.email,
     role: 'USER'
-  });
+  };
+  const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
 
   return {
     message: 'Registration successful',
-    token,
+    accessToken,
+    refreshToken,
     user: {
       id: newUser._id,
       username: newUser.username,
@@ -261,11 +274,143 @@ const registerUser = async (username, email, password, fullName, phone, address 
   };
 };
 
+/**
+ * Request OTP for signup
+ * @param {string} email 
+ * @returns {object}
+ */
+const requestSignupOTP = async (email) => {
+  try {
+    // Check if email already exists
+    let existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error('Email already registered');
+    }
+
+    // Delete old OTP if exists
+    await OTP.deleteOne({ email, purpose: 'signup' });
+
+    // Generate new OTP
+    const otp = generateOTP(6);
+
+    // Save OTP to database
+    const newOTP = new OTP({
+      email,
+      code: otp,
+      purpose: 'signup'
+    });
+    await newOTP.save();
+
+    // Send OTP via email
+    await sendOTP(email, otp, 'signup');
+
+    return {
+      message: 'OTP sent to email successfully',
+      email: email.replace(/(.{2}).*(@.*)/, '$1***$2') // Mask email for security
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Verify OTP and register user
+ * @param {string} email 
+ * @param {string} otp 
+ * @param {string} username 
+ * @param {string} password 
+ * @param {string} fullName 
+ * @param {string} phone 
+ * @returns {object}
+ */
+const verifyOTPAndRegister = async (email, otp, username, password, fullName, phone, address = '') => {
+  try {
+    // Validate OTP format
+    if (!validateOTP(otp)) {
+      throw new Error('Invalid OTP format');
+    }
+
+    // Check if email already exists
+    let existingUser = await User.findOne({ email });
+    if (existingUser) {
+      throw new Error('Email already registered');
+    }
+
+    // Check if username already exists
+    existingUser = await User.findOne({ username });
+    if (existingUser) {
+      throw new Error('Username already exists');
+    }
+
+    // Find OTP
+    const otpRecord = await OTP.findOne({
+      email,
+      code: otp,
+      purpose: 'signup',
+      isUsed: false
+    });
+
+    if (!otpRecord) {
+      throw new Error('Invalid or expired OTP');
+    }
+
+    // Mark OTP as used
+    otpRecord.isUsed = true;
+    await otpRecord.save();
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Create new user
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      fullName,
+      phone,
+      address: address || '',
+      role: 'USER',
+      emailVerified: true // Mark as verified since OTP was verified
+    });
+
+    await newUser.save();
+
+    // Send welcome email
+    await sendWelcomeEmail(email, fullName);
+
+    // Generate token pair
+    const tokenPayload = {
+      id: newUser._id.toString(),
+      username: newUser.username,
+      email: newUser.email,
+      role: 'USER'
+    };
+    const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
+
+    return {
+      message: 'Registration successful',
+      accessToken,
+      refreshToken,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        role: 'USER',
+        fullName: newUser.fullName
+      }
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   login,
   loginAdmin,
   loginStaff,
   loginUser,
   getCurrentUser,
-  registerUser
+  registerUser,
+  requestSignupOTP,
+  verifyOTPAndRegister
 };

@@ -4,24 +4,47 @@ import apiClient from '../../utils/apiClient'
 import './StaffPOS.css'
 
 function StaffPOS() {
+  // Tab State
+  const [activeTab, setActiveTab] = useState('create') // 'create', 'process', 'history'
+
+  // Shared States
   const [menus, setMenus] = useState([])
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // POS State
+  // Create Order State
   const [posOrder, setPosOrder] = useState({
     tableNumber: 1,
     items: [],
     notes: '',
     paymentMethod: 'CASH'
   })
-  const [searchQuery, setSearchQuery] = useState('')
 
-  // Load menus and categories
+  // Process Order States
+  const [pendingOrders, setPendingOrders] = useState([])
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [orderStats, setOrderStats] = useState({
+    total: 0,
+    pending: 0,
+    confirmed: 0,
+    preparing: 0,
+    ready: 0,
+    completed: 0
+  })
+  const [filterStatus, setFilterStatus] = useState('PENDING')
+  const [processedOrders, setProcessedOrders] = useState([])
+  const [updatingOrderId, setUpdatingOrderId] = useState(null)
+
+  // Load menus, categories, and pending orders
   useEffect(() => {
     fetchMenusAndCategories()
-  }, [])
+    if (activeTab === 'process' || activeTab === 'history') {
+      fetchPendingOrders()
+      fetchOrderStats()
+    }
+  }, [activeTab])
 
   const fetchMenusAndCategories = async () => {
     try {
@@ -40,7 +63,34 @@ function StaffPOS() {
     }
   }
 
-  // Filter menus
+  const fetchPendingOrders = async () => {
+    try {
+      const res = await apiClient.get(`/order/filter/status?status=${filterStatus}`)
+      setProcessedOrders(res.data)
+    } catch (err) {
+      console.error('Error fetching orders:', err)
+      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
+    }
+  }
+
+  const fetchOrderStats = async () => {
+    try {
+      const res = await apiClient.get('/order/stats/dashboard')
+      setOrderStats(res.data)
+    } catch (err) {
+      console.error('Error fetching stats:', err)
+    }
+  }
+
+  // Refresh orders when filter changes
+  useEffect(() => {
+    if (activeTab === 'process' || activeTab === 'history') {
+      fetchPendingOrders()
+    }
+  }, [filterStatus])
+
+  // ===================== CREATE ORDER FUNCTIONS =====================
+
   const getFilteredMenus = () => {
     let filtered = menus
 
@@ -57,12 +107,10 @@ function StaffPOS() {
     return filtered
   }
 
-  // Add item to order
   const addItemToOrder = (menu) => {
     const existingItem = posOrder.items.find(item => item.menuId === menu._id)
 
     if (existingItem) {
-      // Increase quantity
       setPosOrder(prev => ({
         ...prev,
         items: prev.items.map(item =>
@@ -72,7 +120,6 @@ function StaffPOS() {
         )
       }))
     } else {
-      // Add new item
       setPosOrder(prev => ({
         ...prev,
         items: [...prev.items, {
@@ -85,7 +132,6 @@ function StaffPOS() {
     }
   }
 
-  // Update item quantity
   const updateItemQuantity = (menuId, newQuantity) => {
     if (newQuantity <= 0) {
       removeItemFromOrder(menuId)
@@ -102,7 +148,6 @@ function StaffPOS() {
     }))
   }
 
-  // Remove item from order
   const removeItemFromOrder = (menuId) => {
     setPosOrder(prev => ({
       ...prev,
@@ -110,7 +155,6 @@ function StaffPOS() {
     }))
   }
 
-  // Calculate totals
   const calculateTotals = () => {
     const subtotal = posOrder.items.reduce((total, item) => total + (item.price * item.quantity), 0)
     const tax = subtotal * 0.1 // 10% tax
@@ -121,7 +165,6 @@ function StaffPOS() {
 
   const { subtotal, tax, total } = calculateTotals()
 
-  // Submit order
   const handleSubmitOrder = async () => {
     if (posOrder.items.length === 0) {
       alert('⚠️ Vui lòng thêm ít nhất một món ăn')
@@ -136,7 +179,6 @@ function StaffPOS() {
     try {
       setLoading(true)
 
-      // Create order
       const orderPayload = {
         orderType: 'DINE_IN',
         tableNumber: parseInt(posOrder.tableNumber),
@@ -163,7 +205,6 @@ function StaffPOS() {
 
       alert('✅ Đơn hàng được tạo thành công! Đơn #' + response.data.orderNumber)
 
-      // Reset order
       setPosOrder({
         tableNumber: 1,
         items: [],
@@ -179,7 +220,6 @@ function StaffPOS() {
     }
   }
 
-  // Clear order
   const handleClearOrder = () => {
     if (window.confirm('Bạn chắc chắn muốn xóa tất cả?')) {
       setPosOrder({
@@ -190,6 +230,65 @@ function StaffPOS() {
       })
     }
   }
+
+  // ===================== PROCESS ORDER FUNCTIONS =====================
+
+  const handleConfirmOrder = async (orderId) => {
+    try {
+      setUpdatingOrderId(orderId)
+      await apiClient.put(`/order/${orderId}/status`, { status: 'CONFIRMED' })
+      alert('✅ Đơn hàng đã được xác nhận')
+      fetchPendingOrders()
+      fetchOrderStats()
+      setSelectedOrder(null)
+      setUpdatingOrderId(null)
+    } catch (err) {
+      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
+      setUpdatingOrderId(null)
+    }
+  }
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      setUpdatingOrderId(orderId)
+      await apiClient.put(`/order/${orderId}/status`, { status: newStatus })
+      alert(`✅ Đơn hàng đã cập nhật sang ${newStatus}`)
+      fetchPendingOrders()
+      fetchOrderStats()
+      setSelectedOrder(null)
+      setUpdatingOrderId(null)
+    } catch (err) {
+      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
+      setUpdatingOrderId(null)
+    }
+  }
+
+  const translateStatus = (status) => {
+    const map = {
+      PENDING: '⏳ Chờ xác nhận',
+      CONFIRMED: '✔️ Đã xác nhận',
+      PREPARING: '🍳 Đang chuẩn bị',
+      READY: '✅ Sẵn sàng',
+      DELIVERING: '🚚 Đang giao',
+      DELIVERED: '📦 Đã giao',
+      CANCELLED: '❌ Đã hủy'
+    }
+    return map[status] || status
+  }
+
+  const getStatusColor = (status) => {
+    const colors = {
+      PENDING: '#ffc107',
+      CONFIRMED: '#17a2b8',
+      PREPARING: '#ff6b6b',
+      READY: '#28a745',
+      DELIVERED: '#6c757d',
+      CANCELLED: '#dc3545'
+    }
+    return colors[status] || '#6c757d'
+  }
+
+  // ===================== LOADING & RENDERING =====================
 
   if (loading && menus.length === 0) {
     return (
@@ -205,10 +304,34 @@ function StaffPOS() {
     <AdminLayout>
       <div className="staff-pos">
         <div className="pos-header">
-          <h2>🏪 Hệ Thống POS - Quán Ăn Trực Tiếp</h2>
+          <h2>🏪 Hệ Thống POS - Quản Lý Bàn</h2>
         </div>
 
-        <div className="pos-container">
+        {/* Tab Navigation */}
+        <div className="pos-tabs">
+          <button
+            className={`tab-btn ${activeTab === 'create' ? 'active' : ''}`}
+            onClick={() => setActiveTab('create')}
+          >
+            📝 Tạo Đơn Hàng
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'process' ? 'active' : ''}`}
+            onClick={() => setActiveTab('process')}
+          >
+            🔄 Xử Lý Đơn ({orderStats.pending})
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+            onClick={() => setActiveTab('history')}
+          >
+            📊 Lịch Sử
+          </button>
+        </div>
+
+        {/* CREATE ORDER TAB */}
+        {activeTab === 'create' && (
+          <div className="pos-container">
           {/* Menu Section */}
           <div className="pos-menu-section">
             <div className="menu-controls">
@@ -391,6 +514,202 @@ function StaffPOS() {
             </div>
           </div>
         </div>
+        )}
+
+        {/* PROCESS ORDERS TAB */}
+        {activeTab === 'process' && (
+          <div className="process-container">
+            <div className="process-header">
+              <div className="stats-cards">
+                <div className="stat-card">
+                  <div className="stat-number">{orderStats.pending}</div>
+                  <div className="stat-label">Chờ Xác Nhận</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number">{orderStats.confirmed}</div>
+                  <div className="stat-label">Đã Xác Nhận</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number">{orderStats.preparing}</div>
+                  <div className="stat-label">Đang Chuẩn Bị</div>
+                </div>
+                <div className="stat-card">
+                  <div className="stat-number">{orderStats.ready}</div>
+                  <div className="stat-label">Sẵn Sàng</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="filter-section">
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="status-filter"
+              >
+                <option value="PENDING">⏳ Chờ Xác Nhận</option>
+                <option value="CONFIRMED">✔️ Đã Xác Nhận</option>
+                <option value="PREPARING">🍳 Đang Chuẩn Bị</option>
+                <option value="READY">✅ Sẵn Sàng</option>
+              </select>
+            </div>
+
+            <div className="process-layout">
+              <div className="orders-list">
+                <h3>📋 Danh Sách Đơn</h3>
+                {processedOrders.length === 0 ? (
+                  <div className="empty-state">Không có đơn hàng nào</div>
+                ) : (
+                  processedOrders.map(order => (
+                    <div
+                      key={order._id}
+                      className={`order-card ${selectedOrder?._id === order._id ? 'selected' : ''}`}
+                      onClick={() => setSelectedOrder(order)}
+                    >
+                      <div className="order-card-header">
+                        <div className="order-number">#{order.orderNumber}</div>
+                        <div
+                          className="order-status"
+                          style={{ backgroundColor: getStatusColor(order.status) }}
+                        >
+                          {translateStatus(order.status)}
+                        </div>
+                      </div>
+                      <div className="order-card-body">
+                        <div>📍 Bàn: {order.tableNumber || 'N/A'}</div>
+                        <div>🕐 {new Date(order.createdAt).toLocaleTimeString()}</div>
+                        <div>💰 {order.total.toLocaleString()}đ</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="order-detail">
+                {selectedOrder ? (
+                  <>
+                    <h3>📦 Chi Tiết Đơn</h3>
+                    <div className="detail-box">
+                      <div className="detail-row">
+                        <span>Mã Đơn:</span>
+                        <strong>{selectedOrder.orderNumber}</strong>
+                      </div>
+                      <div className="detail-row">
+                        <span>Bàn:</span>
+                        <strong>{selectedOrder.tableNumber}</strong>
+                      </div>
+                      <div className="detail-row">
+                        <span>Trạng Thái:</span>
+                        <strong
+                          style={{ color: getStatusColor(selectedOrder.status) }}
+                        >
+                          {translateStatus(selectedOrder.status)}
+                        </strong>
+                      </div>
+                      <div className="detail-row">
+                        <span>Thời Gian:</span>
+                        <strong>{new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}</strong>
+                      </div>
+                      <div className="detail-row">
+                        <span>Ghi Chú:</span>
+                        <strong>{selectedOrder.notes || 'Không có'}</strong>
+                      </div>
+                    </div>
+
+                    <h4>🍽️ Các Món</h4>
+                    <div className="items-list">
+                      {selectedOrder.items?.map((item, idx) => (
+                        <div key={idx} className="item-detail">
+                          <div>{item.menu?.name} x {item.quantity}</div>
+                          <div>{(item.price * item.quantity).toLocaleString()}đ</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="detail-box">
+                      <div className="detail-row total">
+                        <span>Tổng Cộng:</span>
+                        <strong>{selectedOrder.total.toLocaleString()}đ</strong>
+                      </div>
+                    </div>
+
+                    <div className="action-buttons">
+                      {selectedOrder.status === 'PENDING' && (
+                        <button
+                          className="btn btn-success"
+                          onClick={() => handleConfirmOrder(selectedOrder._id)}
+                          disabled={updatingOrderId === selectedOrder._id}
+                        >
+                          ✔️ Xác Nhận Đơn
+                        </button>
+                      )}
+                      {selectedOrder.status === 'CONFIRMED' && (
+                        <button
+                          className="btn btn-warning"
+                          onClick={() => handleUpdateOrderStatus(selectedOrder._id, 'PREPARING')}
+                          disabled={updatingOrderId === selectedOrder._id}
+                        >
+                          🍳 Bắt Đầu Chuẩn Bị
+                        </button>
+                      )}
+                      {selectedOrder.status === 'PREPARING' && (
+                        <button
+                          className="btn btn-info"
+                          onClick={() => handleUpdateOrderStatus(selectedOrder._id, 'READY')}
+                          disabled={updatingOrderId === selectedOrder._id}
+                        >
+                          ✅ Sẵn Sàng
+                        </button>
+                      )}
+                      {selectedOrder.status === 'READY' && (
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => handleUpdateOrderStatus(selectedOrder._id, 'DELIVERED')}
+                          disabled={updatingOrderId === selectedOrder._id}
+                        >
+                          📦 Giao Hàng
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="empty-state">Chọn một đơn hàng để xem chi tiết</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* HISTORY TAB */}
+        {activeTab === 'history' && (
+          <div className="history-container">
+            <h3>📊 Lịch Sử Đơn Hàng</h3>
+            <div className="history-list">
+              {processedOrders.length === 0 ? (
+                <div className="empty-state">Không có đơn hàng nào</div>
+              ) : (
+                processedOrders.map(order => (
+                  <div key={order._id} className="history-card">
+                    <div className="history-header">
+                      <span className="order-id">#{order.orderNumber}</span>
+                      <span
+                        className="order-status"
+                        style={{ backgroundColor: getStatusColor(order.status) }}
+                      >
+                        {translateStatus(order.status)}
+                      </span>
+                    </div>
+                    <div className="history-body">
+                      <div>📍 Bàn: {order.tableNumber || 'N/A'}</div>
+                      <div>🕐 {new Date(order.createdAt).toLocaleString('vi-VN')}</div>
+                      <div>💰 {order.total.toLocaleString()}đ</div>
+                      <div>🍽️ {order.items?.length || 0} món</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

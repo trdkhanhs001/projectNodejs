@@ -200,6 +200,8 @@
   width: 100%;
   border-collapse: collapse;
   margin-top: 0;
+  table-layout: fixed;
+  overflow-x: auto;
 }
 
 .table thead {
@@ -215,12 +217,16 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 2px solid #ddd;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .table td {
   padding: 14px 16px;
   border-bottom: 1px solid #f0f0f0;
   vertical-align: middle;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .table tbody tr {

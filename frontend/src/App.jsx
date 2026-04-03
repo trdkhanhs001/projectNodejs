@@ -17,6 +17,7 @@ import StaffDashboard from './pages/Staff/StaffDashboard'
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/AdminDashboard'
+import AdminUsers from './pages/Admin/AdminUsers'
 import AdminStaff from './pages/Admin/AdminStaff'
 import AdminCategory from './pages/Admin/AdminCategory'
 import AdminMenu from './pages/Admin/AdminMenu'
@@ -45,6 +46,7 @@ function App() {
 
             {/* ============ Admin Routes ============ */}
             <Route path="/admin" element={<RoleBasedRoute requiredRole="ADMIN"><AdminDashboard /></RoleBasedRoute>} />
+            <Route path="/admin/users" element={<RoleBasedRoute requiredRole="ADMIN"><AdminUsers /></RoleBasedRoute>} />
             <Route path="/admin/staff" element={<RoleBasedRoute requiredRole="ADMIN"><AdminStaff /></RoleBasedRoute>} />
             <Route path="/admin/category" element={<RoleBasedRoute requiredRole="ADMIN"><AdminCategory /></RoleBasedRoute>} />
             <Route path="/admin/menu" element={<RoleBasedRoute requiredRole="ADMIN"><AdminMenu /></RoleBasedRoute>} />

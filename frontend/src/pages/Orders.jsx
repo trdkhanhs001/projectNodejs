@@ -82,10 +82,10 @@ function Orders() {
 
                     <div className="order-card-body">
                       <p className="customer-name">
-                        👤 {order.customer?.name}
+                        👤 {selectedOrder.user?.fullName || selectedOrder.user?.username || 'User'}
                       </p>
                       <p className="order-items">
-                        {order.items?.length} món | {order.totalAmount?.toLocaleString()} đ
+                        {selectedOrder.items?.length || 0} món | {(selectedOrder.total || 0).toLocaleString()} đ
                       </p>
                     </div>
                   </div>
@@ -135,36 +135,40 @@ function Orders() {
                     <h3>📋 Thông tin khách hàng</h3>
                     <div className="info-row">
                       <span>Tên:</span>
-                      <strong>{selectedOrder.customer?.name}</strong>
+                      <strong>{selectedOrder.user?.fullName || selectedOrder.user?.username || '—'}</strong>
                     </div>
                     <div className="info-row">
                       <span>Email:</span>
-                      <strong>{selectedOrder.customer?.email || '—'}</strong>
+                      <strong>{selectedOrder.user?.email || '—'}</strong>
                     </div>
                     <div className="info-row">
                       <span>Điện thoại:</span>
-                      <strong>{selectedOrder.customer?.phone}</strong>
+                      <strong>{selectedOrder.deliveryPhone || '—'}</strong>
                     </div>
                     <div className="info-row">
-                      <span>Địa chỉ:</span>
-                      <strong>{selectedOrder.customer?.address}</strong>
+                      <span>Địa chỉ giao:</span>
+                      <strong>{selectedOrder.deliveryAddress || '—'}</strong>
                     </div>
                   </div>
 
                   {/* Items */}
                   <div className="items-section">
                     <h3>🍽️ Danh sách món ăn</h3>
-                    {selectedOrder.items?.map((item, idx) => (
-                      <div key={idx} className="item-row">
-                        <div className="item-info">
-                          <strong>{item.name || 'Món ăn'}</strong>
-                          <span className="item-qty">x{item.quantity}</span>
+                    {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                      selectedOrder.items.map((item, idx) => (
+                        <div key={idx} className="item-row">
+                          <div className="item-info">
+                            <strong>{item.menu?.name || item.name || 'Món ăn'}</strong>
+                            <span className="item-qty">x{item.quantity}</span>
+                          </div>
+                          <div className="item-price">
+                            {((item.menu?.price || item.price || 0) * item.quantity).toLocaleString()} đ
+                          </div>
                         </div>
-                        <div className="item-price">
-                          {(item.price * item.quantity).toLocaleString()} đ
-                        </div>
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p style={{ color: '#7f8c8d' }}>Không có món ăn nào</p>
+                    )}
                   </div>
 
                   {/* Notes */}
@@ -179,15 +183,29 @@ function Orders() {
                   <div className="total-section">
                     <div className="total-row">
                       <span>Tổng cộng:</span>
-                      <strong className="total-amount">
-                        {selectedOrder.totalAmount?.toLocaleString()} đ
+                      <strong>
+                        {(selectedOrder.total || 0).toLocaleString()} đ
                       </strong>
                     </div>
                     <div className="total-row">
-                      <span>Trạng thái:</span>
+                      <span>Phương thức thanh toán:</span>
+                      <strong>{selectedOrder.paymentMethod || 'CASH'}</strong>
+                    </div>
+                    <div className="total-row">
+                      <span>Trạng thái thanh toán:</span>
+                      <strong style={{ color: selectedOrder.paymentStatus === 'PAID' ? '#27ae60' : '#e74c3c' }}>
+                        {selectedOrder.paymentStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
+                      </strong>
+                    </div>
+                    <div className="total-row">
+                      <span>Trạng thái đơn:</span>
                       <strong className={`status-badge ${getStatusBadge(selectedOrder.status).color}`}>
                         {getStatusBadge(selectedOrder.status).label}
                       </strong>
+                    </div>
+                    <div className="total-row">
+                      <span>Ngày đặt:</span>
+                      <strong>{formatDate(selectedOrder.createdAt)}</strong>
                     </div>
                   </div>
 

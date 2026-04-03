@@ -77,12 +77,12 @@ function Cart() {
                       </div>
 
                       {/* Price */}
-                      <div className="col-price">
+                      <div className="col-price" data-label="Đơn giá:">
                         <strong>{item.price?.toLocaleString()} đ</strong>
                       </div>
 
                       {/* Quantity */}
-                      <div className="col-quantity">
+                      <div className="col-quantity" data-label="Số lượng:">
                         <div className="quantity-control">
                           <button
                             className="qty-btn"
@@ -107,14 +107,14 @@ function Cart() {
                       </div>
 
                       {/* Total */}
-                      <div className="col-total">
+                      <div className="col-total" data-label="Tổng cộng:">
                         <strong className="total-price">
                           {(item.price * item.quantity).toLocaleString()} đ
                         </strong>
                       </div>
 
                       {/* Action */}
-                      <div className="col-action">
+                      <div className="col-action" data-label="Hành động:">
                         <button
                           className="btn btn-danger btn-small"
                           onClick={() => removeFromCart(item._id)}
