@@ -99,7 +99,7 @@ exports.updateStaff = async (id, data, file) => {
           const publicId = url.split('/').slice(-1)[0].split('.')[0];
           await cloudinary.uploader.destroy(`restaurant/staff/${publicId}`);
         } catch (err) {
-          console.log('Could not delete old avatar:', err.message);
+          // Silently handle deletion errors
         }
       }
 

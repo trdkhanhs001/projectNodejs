@@ -16,18 +16,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "mongoose": "^7.0.0",
-    "jsonwebtoken": "^9.0.0",
-    "bcrypt": "^5.1.0",
-    "dotenv": "^16.0.3",
-    "joi": "^17.9.1",
+    "bcrypt": "^6.0.0",
+    "cloudinary": "^2.9.0",
     "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
     "express-rate-limit": "^6.7.0",
+    "joi": "^17.9.1",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0",
     "multer": "^1.4.5-lts.1",
-    "cloudinary": "^1.40.0"
+    "vite": "8.0.3"
   },
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^3.1.14"
   }
 }

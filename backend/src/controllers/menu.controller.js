@@ -90,7 +90,7 @@ exports.updateMenu = async (id, data, adminId, file) => {
           const publicId = url.split('/').slice(-1)[0].split('.')[0];
           await cloudinary.uploader.destroy(`restaurant/menu/${publicId}`);
         } catch (err) {
-          console.log('Could not delete old image:', err.message);
+          // Silently handle deletion errors
         }
       }
 

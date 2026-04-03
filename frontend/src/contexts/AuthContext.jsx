@@ -13,7 +13,7 @@ export function AuthProvider({ children }) {
 
   // Lấy token từ localStorage khi app mount
   useEffect(() => {
-    const savedToken = localStorage.getItem('admin_token')
+    const savedToken = localStorage.getItem('auth_token')
     if (savedToken) {
       setToken(savedToken)
       // Kiểm tra token còn hợp lệ không
@@ -33,14 +33,83 @@ export function AuthProvider({ children }) {
       setLoading(false)
     } catch (err) {
       console.error('Token verification failed:', err)
-      localStorage.removeItem('admin_token')
+      localStorage.removeItem('auth_token')
       setToken(null)
       setUser(null)
       setLoading(false)
     }
   }
 
-  // Hàm login
+  // Hàm login Admin
+  const loginAdmin = async (username, password) => {
+    try {
+      const response = await apiClient.post('/auth/admin/login', {
+        username,
+        password
+      })
+
+      const { token: newToken, user: userData } = response.data
+
+      localStorage.setItem('auth_token', newToken)
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+
+      setToken(newToken)
+      setUser(userData)
+
+      return { success: true, message: 'Đăng nhập Admin thành công!', role: userData.role }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Lỗi đăng nhập Admin'
+      return { success: false, message: errorMsg }
+    }
+  }
+
+  // Hàm login Staff
+  const loginStaff = async (username, password) => {
+    try {
+      const response = await apiClient.post('/auth/staff/login', {
+        username,
+        password
+      })
+
+      const { token: newToken, user: userData } = response.data
+
+      localStorage.setItem('auth_token', newToken)
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+
+      setToken(newToken)
+      setUser(userData)
+
+      return { success: true, message: 'Đăng nhập Staff thành công!', role: userData.role }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Lỗi đăng nhập Staff'
+      return { success: false, message: errorMsg }
+    }
+  }
+
+  // Hàm login User
+  const loginUser = async (username, password) => {
+    try {
+      const response = await apiClient.post('/auth/user/login', {
+        username,
+        password
+      })
+
+      const { token: newToken, user: userData } = response.data
+
+      localStorage.setItem('auth_token', newToken)
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
+
+      setToken(newToken)
+      setUser(userData)
+
+      return { success: true, message: 'Đăng nhập thành công!', role: userData.role }
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Lỗi đăng nhập'
+      return { success: false, message: errorMsg }
+    }
+  }
+
+  // Hàm login (giữ lại cho backwards compatibility)
   const login = async (username, password) => {
     try {
       const response = await apiClient.post('/auth/login', {
@@ -51,13 +120,13 @@ export function AuthProvider({ children }) {
       const { token: newToken, user: userData } = response.data
 
       // Lưu token vào localStorage
-      localStorage.setItem('admin_token', newToken)
+      localStorage.setItem('auth_token', newToken)
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
 
       setToken(newToken)
       setUser(userData)
 
-      return { success: true, message: 'Đăng nhập thành công!' }
+      return { success: true, message: 'Đăng nhập thành công!', role: userData.role }
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Lỗi đăng nhập'
       return { success: false, message: errorMsg }
@@ -66,7 +135,7 @@ export function AuthProvider({ children }) {
 
   // Hàm logout
   const logout = () => {
-    localStorage.removeItem('admin_token')
+    localStorage.removeItem('auth_token')
     delete apiClient.defaults.headers.common['Authorization']
     setToken(null)
     setUser(null)
@@ -82,6 +151,9 @@ export function AuthProvider({ children }) {
       loading,
       isAuthenticated,
       login,
+      loginAdmin,
+      loginStaff,
+      loginUser,
       logout
     }}>
       {children}

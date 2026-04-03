@@ -14,7 +14,7 @@ const { hashPassword } = require('../utils/password');
 // Kết nối MongoDB
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/restaurant_app', {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/restaurant_app', {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });

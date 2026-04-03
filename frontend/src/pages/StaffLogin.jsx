@@ -1,47 +1,35 @@
-// Login page - Đăng nhập admin/staff
+// Staff Login Page
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import './Login.css'
 
-function Login() {
+function StaffLogin() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { loginStaff } = useAuth()
 
-  // State cho form
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  // Xử lý submit form
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    // Validate input
     if (!username.trim() || !password.trim()) {
       setError('Vui lòng nhập tên đăng nhập và mật khẩu!')
       setLoading(false)
       return
     }
 
-    // Gọi hàm login từ AuthContext
-    const result = await login(username, password)
+    const result = await loginStaff(username, password)
 
     if (result.success) {
-      // Redirect theo role
-      if (result.role === 'ADMIN') {
-        navigate('/admin')
-      } else if (result.role === 'STAFF') {
-        navigate('/staff')
-      } else {
-        navigate('/')
-      }
+      navigate('/staff')
     } else {
-      // Đăng nhập thất bại -> hiển thị lỗi
       setError(result.message)
     }
 
@@ -51,22 +39,18 @@ function Login() {
   return (
     <div className="login-container">
       <div className="login-box">
-        {/* Header */}
         <div className="login-header">
-          <h1>🍽️ Restaurant</h1>
-          <p>Hệ thống quản lý & mua hàng</p>
+          <h1>🍽️ STAFF</h1>
+          <p>Hệ thống bán hàng nhân viên</p>
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="login-form">
-          {/* Error message */}
           {error && (
             <div className="alert alert-error">
               {error}
             </div>
           )}
 
-          {/* Username field */}
           <div className="form-group">
             <label>👤 Tên đăng nhập</label>
             <input
@@ -79,10 +63,9 @@ function Login() {
             />
           </div>
 
-          {/* Password field */}
           <div className="form-group">
-            <label>🔒 Mật khẩu</label>
-            <div className="password-input-group">
+            <label>🔐 Mật khẩu</label>
+            <div className="password-input">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -92,47 +75,25 @@ function Login() {
               />
               <button
                 type="button"
-                className="toggle-password"
                 onClick={() => setShowPassword(!showPassword)}
+                className="btn-show-password"
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? '👁️‍🗨️' : '👁️'}
               </button>
             </div>
           </div>
 
-          {/* Submit button */}
-          <button
-            type="submit"
-            className="login-btn"
+          <button 
+            type="submit" 
+            className="btn btn-primary"
             disabled={loading}
           >
-            {loading ? (
-              <>
-                <span className="spinner-small"></span>
-                Đang đăng nhập...
-              </>
-            ) : (
-              '➜ Đăng nhập'
-            )}
+            {loading ? 'Đang đăng nhập...' : 'Đăng nhập Staff'}
           </button>
         </form>
-
-        {/* Test accounts info */}
-        <div className="test-accounts">
-          <p><strong>🧪 Tài khoản test:</strong></p>
-          <ul>
-            <li><strong>👑 Admin:</strong> admin / admin123</li>
-            <li><strong>👨‍💼 Staff:</strong> staff / staff123</li>
-          </ul>
-        </div>
-
-        {/* Footer */}
-        <div className="login-footer">
-          <p>© 2024 Restaurant Management System</p>
-        </div>
       </div>
     </div>
   )
 }
 
-export default Login
+export default StaffLogin

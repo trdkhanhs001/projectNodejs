@@ -55,6 +55,24 @@ router.post('/', checkLogin, checkRole('USER'), async function (req, res, next) 
 });
 
 /**
+ * POST /api/order/guest
+ * Create guest order (no login required)
+ * Body: { 
+ *   items: [{menuId, quantity}],
+ *   guestInfo: {name, email, phone, address},
+ *   notes, paymentMethod
+ * }
+ */
+router.post('/guest', async function (req, res, next) {
+  try {
+    const result = await orderController.createGuestOrder(req.body);
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * PUT /api/order/:id/status
  * Update order status - requires admin or staff
  * Body: { status, itemId (optional for item status update) }

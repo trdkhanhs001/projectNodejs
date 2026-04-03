@@ -1,0 +1,147 @@
+.user-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  gap: 30px;
+}
+
+/* Logo */
+.header-logo h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.header-logo h1:hover {
+  transform: scale(1.05);
+}
+
+.header-logo a {
+  text-decoration: none;
+  color: white;
+}
+
+/* Navigation */
+.header-nav {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link:hover {
+  opacity: 0.8;
+  transform: translateY(-2px);
+}
+
+.cart-badge {
+  background-color: #e74c3c;
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: bold;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* User Section */
+.header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.btn-logout {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  transition: all 0.3s ease;
+}
+
+.btn-logout:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary {
+  background-color: #e74c3c;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+.btn-primary:hover {
+  background-color: #c0392b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .header-container {
+    gap: 15px;
+    padding: 12px 15px;
+  }
+
+  .header-logo h1 {
+    font-size: 20px;
+  }
+
+  .header-nav {
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .user-name {
+    display: none;
+  }
+
+  .btn-logout {
+    padding: 6px 12px;
+    font-size: 12px;
+  }
+}

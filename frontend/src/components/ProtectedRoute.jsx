@@ -19,9 +19,9 @@ function ProtectedRoute({ children }) {
     )
   }
 
-  // Nếu chưa đăng nhập -> redirect to login
+  // Nếu chưa đăng nhập -> redirect to home
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/" replace />
   }
 
   // Nếu đã đăng nhập -> render component

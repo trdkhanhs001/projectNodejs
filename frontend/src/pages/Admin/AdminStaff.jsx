@@ -38,11 +38,7 @@ function AdminStaff() {
   const fetchStaffList = async () => {
     try {
       setLoading(true)
-      const token = localStorage.getItem('admin_token')
-      console.log('Fetching staff with token:', token ? '✓ Token exists' : '✗ No token')
-      
       const response = await apiClient.get('/staff')
-      console.log('Staff fetched successfully:', response.data)
       setStaffList(response.data)
       setLoading(false)
     } catch (err) {

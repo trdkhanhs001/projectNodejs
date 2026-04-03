@@ -84,7 +84,7 @@ exports.updateCategory = async (id, data, adminId, file) => {
           const publicId = url.split('/').slice(-1)[0].split('.')[0];
           await cloudinary.uploader.destroy(`restaurant/category/${publicId}`);
         } catch (err) {
-          console.log('Could not delete old image:', err.message);
+          // Silently handle deletion errors
         }
       }
 

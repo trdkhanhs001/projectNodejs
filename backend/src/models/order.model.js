@@ -10,12 +10,34 @@ const orderSchema = new mongoose.Schema(
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'User is required']
+      default: null  // Optional for guest orders
     },
     tableNumber: {
       type: Number,
       default: null,
       min: [1, 'Table number must be at least 1']
+    },
+    // Guest info (for guest orders)
+    guestName: {
+      type: String,
+      maxlength: [100, 'Guest name must not exceed 100 characters'],
+      default: null
+    },
+    guestEmail: {
+      type: String,
+      lowercase: true,
+      maxlength: [100, 'Guest email must not exceed 100 characters'],
+      default: null
+    },
+    guestPhone: {
+      type: String,
+      maxlength: [20, 'Guest phone must not exceed 20 characters'],
+      default: null
+    },
+    guestAddress: {
+      type: String,
+      maxlength: [200, 'Guest address must not exceed 200 characters'],
+      default: null
     },
     items: [
       {

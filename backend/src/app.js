@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const { connectDB } = require('./config/database');
 const { securityHeaders } = require('./middleware/security');
+const path = require('path');
 
 const app = express();
 
@@ -10,8 +11,15 @@ const app = express();
 app.use(securityHeaders);
 
 // Middleware - CORS
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000'];
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -21,6 +29,19 @@ app.use(cors(corsOptions));
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static files from the frontend build folder
+app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// Serve homepage
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
+
+// Serve admin login page
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+});
 
 // Routes
 app.use('/api/auth', require('./routes/auth.routes'));

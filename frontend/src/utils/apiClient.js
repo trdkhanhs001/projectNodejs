@@ -12,7 +12,7 @@ const apiClient = axios.create({
 // Interceptor: Thêm token vào header (khi có)
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('admin_token')
+    const token = localStorage.getItem('auth_token')
     
     // Luôn xóa Content-Type mặc định
     delete config.headers['Content-Type']
@@ -20,9 +20,6 @@ apiClient.interceptors.request.use(
     // Nếu có token, thêm vào Authorization header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
-      console.log('[API Client] Token attached to request:', config.url)
-    } else {
-      console.log('[API Client] No token available for request:', config.url)
     }
     
     // Nếu dữ liệu là FormData, axios sẽ tự set Content-Type với boundary
@@ -43,11 +40,11 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token hết hạn -> redirect to login
-      console.warn('[API Client] Unauthorized (401) - redirecting to login')
-      localStorage.removeItem('admin_token')
+      // Token hết hạn -> xóa token và logout
+      console.warn('[API Client] Unauthorized (401) - clearing auth')
+      localStorage.removeItem('auth_token')
       delete apiClient.defaults.headers.common['Authorization']
-      window.location.href = '/login'
+      // Không redirect tự động - để AuthContext xử lý
     }
     
     // Log chi tiết lỗi (chỉ trong development)

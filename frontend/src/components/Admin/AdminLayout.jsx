@@ -15,7 +15,7 @@ function AdminLayout({ children }) {
   const handleLogout = () => {
     if (window.confirm('Bạn chắc chắn muốn đăng xuất?')) {
       logout()
-      navigate('/login')
+      navigate('/admin-login')
     }
   }
 

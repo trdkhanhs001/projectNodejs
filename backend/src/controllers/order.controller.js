@@ -79,23 +79,26 @@ exports.createOrder = async (userId, data) => {
       menu: menuItem._id,
       quantity: cartItem.quantity,
       price: menuItem.price,
-      status: 'pending'
+      status: 'PENDING'
     });
     await orderItem.save();
     orderItems.push(orderItem._id);
   }
 
+  // Generate order number
+  const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
   // Create order
   const order = new Order({
+    orderNumber,
     user: userId,
     items: orderItems,
-    totalPrice,
+    total: totalPrice,
     deliveryAddress,
-    deliveryPhone,
     notes,
-    paymentMethod,
-    paymentStatus: paymentMethod === 'cash' ? 'pending' : 'paid',
-    status: 'pending'
+    paymentMethod: paymentMethod || 'CASH',
+    paymentStatus: paymentMethod && paymentMethod.toUpperCase() !== 'CASH' ? 'PAID' : 'UNPAID',
+    status: 'PENDING'
   });
 
   await order.save();
@@ -149,6 +152,69 @@ exports.updatePaymentStatus = async (orderId, data) => {
   ).populate('items');
 
   return order;
+};
+
+// Create guest order (no login required)
+exports.createGuestOrder = async (data) => {
+  const { items, guestInfo, notes, paymentMethod } = data;
+
+  if (!items || items.length === 0) {
+    throw new Error('Order items required');
+  }
+
+  if (!guestInfo || !guestInfo.name || !guestInfo.phone) {
+    throw new Error('Guest info (name, phone) required');
+  }
+
+  // Create order items
+  let totalPrice = 0;
+  const orderItems = [];
+
+  for (const cartItem of items) {
+    const menuItem = await Menu.findById(cartItem.menuId);
+    if (!menuItem) {
+      throw new Error(`Menu item not found: ${cartItem.menuId}`);
+    }
+
+    const itemPrice = menuItem.price * cartItem.quantity;
+    totalPrice += itemPrice;
+
+    const orderItem = new OrderItem({
+      menu: menuItem._id,
+      quantity: cartItem.quantity,
+      price: menuItem.price,
+      status: 'PENDING'
+    });
+    await orderItem.save();
+    orderItems.push(orderItem._id);
+  }
+
+  // Generate order number
+  const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+  // Create guest order (no user reference)
+  const order = new Order({
+    orderNumber,
+    items: orderItems,
+    total: totalPrice,
+    guestName: guestInfo.name,
+    guestEmail: guestInfo.email || '',
+    guestPhone: guestInfo.phone,
+    guestAddress: guestInfo.address || '',
+    deliveryAddress: guestInfo.address || guestInfo.phone,
+    notes: notes || '',
+    paymentMethod: paymentMethod || 'CASH',
+    paymentStatus: 'UNPAID',
+    status: 'PENDING'
+  });
+
+  await order.save();
+  await order.populate('items');
+
+  return {
+    message: 'Guest order created successfully',
+    order
+  };
 };
 
 // Soft delete order
