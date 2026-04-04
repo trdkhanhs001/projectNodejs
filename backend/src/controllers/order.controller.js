@@ -266,6 +266,77 @@ exports.createGuestOrder = async (data) => {
   };
 };
 
+
+exports.createPosOrder = async (staffId, data) => {
+  const { items, tableNumber, notes, paymentMethod } = data;
+  if (!items || items.length === 0) {
+    throw new Error('Order items required');
+  }
+  if (!tableNumber) {
+    throw new Error('Table number required for POS orders');
+  }
+
+  const table = await DiningTable.findOne({ tableNumber: tableNumber.toString() });
+  if (!table) {
+    throw new Error(`Table ${tableNumber} not found`);
+  }
+  if (table.status === 'OCCUPIED') {
+    throw new Error(`Table ${tableNumber} is already occupied`);
+  }
+
+  let totalPrice = 0;
+  const orderItems = [];
+
+  for (const cartItem of items) {
+    const menuItem = await Menu.findById(cartItem.menuId);
+    if (!menuItem) {
+      throw new Error(`Menu item not found: ${cartItem.menuId}`);
+    }
+
+    const itemPrice = menuItem.price * cartItem.quantity;
+    totalPrice += itemPrice;
+
+    const orderItem = new OrderItem({
+      menu: menuItem._id,
+      quantity: cartItem.quantity,
+      unitPrice: menuItem.price,
+      subtotal: itemPrice,
+      status: 'PENDING'
+    });
+    await orderItem.save();
+    orderItems.push(orderItem._id);
+  }
+
+  const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+  const order = new Order({
+    orderNumber,
+    items: orderItems,
+    total: totalPrice,
+    tableNumber,
+    orderType: 'DINE_IN',
+    preparedBy: staffId, 
+    notes: notes || '',
+    paymentMethod: paymentMethod || 'CASH',
+    paymentStatus: paymentMethod && paymentMethod.toUpperCase() !== 'CASH' ? 'PAID' : 'UNPAID',
+    status: 'PENDING'
+  });
+
+  await order.save();
+  await order.populate('items').populate('preparedBy', 'fullName email');
+
+  // Mark table as occupied
+  await DiningTable.findOneAndUpdate(
+    { tableNumber: tableNumber.toString() },
+    { status: 'OCCUPIED' }
+  );
+
+  return {
+    message: 'POS order created successfully',
+    order
+  };
+};
+
 // Soft delete order
 exports.deleteOrder = async (id) => {
   const order = await Order.findByIdAndUpdate(id, { isDeleted: true }, { new: true });
