@@ -31,6 +31,7 @@ exports.createReview = async (userId, { menuId, rating, comment, order }) => {
   const review = new Review({
     user: userId,
     menu: menuId,
+    order: order,
     rating,
     order,
     comment
