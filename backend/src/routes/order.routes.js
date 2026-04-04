@@ -120,6 +120,24 @@ router.get('/pending/list', checkLogin, checkRole('STAFF', 'ADMIN'), async funct
 });
 
 /**
+ * GET /api/order/daily-summary
+ * Get daily revenue summary by date - no auth required
+ * Query: ?date=YYYY-MM-DD
+ */
+router.get('/daily-summary', async function (req, res, next) {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ message: 'Date parameter required (format: YYYY-MM-DD)' });
+    }
+    const result = await orderController.getDailySummary(date);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * GET /api/order/stats/dashboard
  * Get order statistics for dashboard - requires staff or admin
  */

@@ -6,13 +6,28 @@ const upload = require('../middleware/upload');
 
 /**
  * GET /api/staff
- * Get all staff members - requires admin
+ * Get all staff members with pagination and search - requires admin
  */
 router.get('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
-    const result = await staffController.getAllStaff();
+    const { page = 1, limit = 10, search } = req.query;
+    console.log('[STAFF GET]', { page, limit, search, userId: req.user?.id });
+    
+    const result = await staffController.getAllStaff(
+      { search },
+      parseInt(page),
+      parseInt(limit)
+    );
+    
+    console.log('[STAFF RESULT]', { 
+      staffCount: result.staff?.length, 
+      total: result.total, 
+      pages: result.pages 
+    });
+    
     res.status(200).json(result);
   } catch (err) {
+    console.error('[STAFF ERROR]', err.message);
     res.status(400).json({ message: err.message });
   }
 });
@@ -81,6 +96,20 @@ router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, 
     }
     res.status(200).json({ message: 'Staff account deleted successfully' });
   } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
+ * GET /api/staff/stats/today
+ * Get today's revenue statistics - accessible to staff
+ */
+router.get('/stats/today', async function (req, res, next) {
+  try {
+    const stats = await staffController.getTodayStats();
+    res.status(200).json(stats);
+  } catch (err) {
+    console.error('[STATS ERROR]', err.message);
     res.status(400).json({ message: err.message });
   }
 });

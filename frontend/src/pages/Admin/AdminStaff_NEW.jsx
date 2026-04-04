@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/Admin/AdminLayout'
 import apiClient from '../../utils/apiClient'
+import showToast from '../../utils/toast'
 import './AdminStaff.css'
 
 function AdminStaff() {
@@ -14,11 +15,12 @@ function AdminStaff() {
   const [showForm, setShowForm] = useState(false)
   const [editingStaff, setEditingStaff] = useState(null)
   const [formData, setFormData] = useState({
-    username: '',
     email: '',
-    password: '',
     fullName: '',
-    phone: ''
+    phone: '',
+    position: 'WAITER',
+    salary: '',
+    address: ''
   })
 
   // Fetch staff
@@ -31,17 +33,24 @@ function AdminStaff() {
       setLoading(true)
       const params = {
         page: currentPage,
-        limit: 10,
-        role: 'STAFF'
+        limit: 10
       }
       if (searchQuery) params.search = searchQuery
 
-      const response = await apiClient.get('/admin/users', { params })
-      setStaff(response.data.users)
-      setTotalPages(response.data.pages)
+      console.log('[FETCH STAFF] Fetching with params:', params)
+      const response = await apiClient.get('/staff', { params })
+      console.log('[FETCH STAFF] Full response:', response)
+      console.log('[FETCH STAFF] Response data:', response.data)
+      console.log('[FETCH STAFF] Staff array:', response.data.staff)
+      
+      setStaff(response.data.staff || [])
+      setTotalPages(response.data.pages || 1)
     } catch (err) {
-      console.error('Error fetching staff:', err)
-      alert('Lỗi load danh sách nhân viên')
+      console.error('[FETCH STAFF ERROR] Full error:', err)
+      console.error('[FETCH STAFF ERROR] Error message:', err.message)
+      console.error('[FETCH STAFF ERROR] Error response:', err.response?.data)
+      console.error('[FETCH STAFF ERROR] Error status:', err.response?.status)
+      showToast('Lỗi tải danh sách nhân viên: ' + (err.response?.data?.message || err.message), 'error')
     } finally {
       setLoading(false)
     }
@@ -51,38 +60,33 @@ function AdminStaff() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!formData.fullName || !formData.email) {
-      alert('Vui lòng điền đầy đủ thông tin')
+    if (!formData.fullName || !formData.email || !formData.phone || !formData.position || !formData.salary) {
+      showToast('Vui lòng điền đầy đủ thông tin bắt buộc', 'warning')
       return
     }
 
     try {
       if (editingStaff) {
-        const { password, ...updateData } = formData
-        await apiClient.put(`/admin/users/${editingStaff._id}`, updateData)
-        alert('Cập nhật nhân viên thành công')
+        await apiClient.patch(`/staff/${editingStaff._id}`, formData)
+        showToast('Cập nhật nhân viên thành công', 'success')
       } else {
-        if (!formData.password) {
-          alert('Vui lòng nhập mật khẩu')
-          return
-        }
-        const staffData = { ...formData, role: 'STAFF' }
-        await apiClient.post('/admin/users', staffData)
-        alert('Thêm nhân viên thành công')
+        await apiClient.post('/staff', formData)
+        showToast('Thêm nhân viên thành công', 'success')
       }
       
       setShowForm(false)
       setFormData({
-        username: '',
         email: '',
-        password: '',
         fullName: '',
-        phone: ''
+        phone: '',
+        position: 'WAITER',
+        salary: '',
+        address: ''
       })
       setCurrentPage(1)
       fetchStaff()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi xử lý')
+      showToast(err.response?.data?.message || 'Lỗi xử lý', 'error')
     }
   }
 
@@ -91,11 +95,11 @@ function AdminStaff() {
     if (!confirm('Bạn chắc chắn muốn xóa nhân viên này?')) return
 
     try {
-      await apiClient.delete(`/admin/users/${staffId}`)
-      alert('Xóa nhân viên thành công')
+      await apiClient.delete(`/staff/${staffId}`)
+      showToast('Xóa nhân viên thành công', 'success')
       fetchStaff()
     } catch (err) {
-      alert(err.response?.data?.message || 'Lỗi xóa')
+      showToast(err.response?.data?.message || 'Lỗi xóa', 'error')
     }
   }
 
@@ -103,11 +107,12 @@ function AdminStaff() {
   const handleEdit = (s) => {
     setEditingStaff(s)
     setFormData({
-      username: s.username,
       email: s.email,
-      password: '',
       fullName: s.fullName,
-      phone: s.phone || ''
+      phone: s.phone || '',
+      position: s.position || 'WAITER',
+      salary: s.salary || '',
+      address: s.address || ''
     })
     setShowForm(true)
   }
@@ -117,11 +122,12 @@ function AdminStaff() {
     setShowForm(false)
     setEditingStaff(null)
     setFormData({
-      username: '',
       email: '',
-      password: '',
       fullName: '',
-      phone: ''
+      phone: '',
+      position: 'WAITER',
+      salary: '',
+      address: ''
     })
   }
 
@@ -158,10 +164,10 @@ function AdminStaff() {
               <table className="staff-table">
                 <thead>
                   <tr>
-                    <th>Tên Đăng Nhập</th>
                     <th>Tên Đầy Đủ</th>
                     <th>Email</th>
                     <th>Điện Thoại</th>
+                    <th>Chức Vụ</th>
                     <th>Ngày Tạo</th>
                     <th>Hành Động</th>
                   </tr>
@@ -169,11 +175,11 @@ function AdminStaff() {
                 <tbody>
                   {staff.map(s => (
                     <tr key={s._id}>
-                      <td><strong>{s.username}</strong></td>
-                      <td>{s.fullName}</td>
+                      <td><strong>{s.fullName}</strong></td>
                       <td>{s.email}</td>
                       <td>{s.phone || '—'}</td>
-                      <td>{new Date(s.createdAt).toLocaleDateString('vi-VN')}</td>
+                      <td>{s.position}</td>
+                      <td>{new Date(s.startDate).toLocaleDateString('vi-VN')}</td>
                       <td>
                         <button
                           className="btn btn-sm btn-info"
@@ -230,38 +236,15 @@ function AdminStaff() {
 
               <form onSubmit={handleSubmit} className="staff-form">
                 <div className="form-group">
-                  <label>Tên Đăng Nhập *</label>
-                  <input
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    required
-                    disabled={!!editingStaff}
-                  />
-                </div>
-
-                <div className="form-group">
                   <label>Email *</label>
                   <input
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     required
+                    disabled={!!editingStaff}
                   />
                 </div>
-
-                {!editingStaff && (
-                  <div className="form-group">
-                    <label>Mật Khẩu *</label>
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      minLength="6"
-                    />
-                  </div>
-                )}
 
                 <div className="form-group">
                   <label>Tên Đầy Đủ *</label>
@@ -274,11 +257,48 @@ function AdminStaff() {
                 </div>
 
                 <div className="form-group">
-                  <label>Điện Thoại</label>
+                  <label>Điện Thoại *</label>
                   <input
                     type="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    required
+                    pattern="[0-9]{10,11}"
+                    title="Điện thoại phải có 10-11 chữ số"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Chức Vụ *</label>
+                  <select
+                    value={formData.position}
+                    onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                    required
+                  >
+                    <option value="WAITER">Phục Vụ</option>
+                    <option value="CHEF">Đầu Bếp</option>
+                    <option value="CASHIER">Thu Ngân</option>
+                    <option value="MANAGER">Quản Lý</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Lương *</label>
+                  <input
+                    type="number"
+                    value={formData.salary}
+                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    required
+                    min="0"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Địa Chỉ</label>
+                  <input
+                    type="text"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   />
                 </div>
 

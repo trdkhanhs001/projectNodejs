@@ -141,9 +141,9 @@ function LoginFormInModal({ authOnly = false, onSwitchToRegister, onBack, onSucc
       const response = await apiClient.post('/auth/user/login', formData)
 
       // Save token
-      localStorage.setItem('auth_token', response.data.token)
-      // Reload để AuthContext đọc lại token mới
-      window.location.reload()
+      localStorage.setItem('auth_token', response.data.accessToken)
+      // Call success callback to update UI
+      onSuccess()
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Đăng nhập thất bại')
     } finally {
@@ -263,9 +263,9 @@ function RegisterFormInModal({ authOnly = false, onSwitchToLogin, onBack, onSucc
       })
 
       // Save token
-      localStorage.setItem('auth_token', response.data.token)
-      // Reload để AuthContext đọc lại token mới
-      window.location.reload()
+      localStorage.setItem('auth_token', response.data.accessToken)
+      // Call success callback to update UI
+      onSuccess()
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Đăng ký thất bại')
     } finally {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/Admin/AdminLayout'
 import apiClient from '../../utils/apiClient'
+import './AdminCommon.css'
 import './StaffPOS.css'
 
 function StaffPOS() {
@@ -95,7 +96,11 @@ function StaffPOS() {
     let filtered = menus
 
     if (selectedCategory !== 'all') {
-      filtered = filtered.filter(m => m.categoryId === selectedCategory)
+      filtered = filtered.filter(m => {
+        // Handle both ObjectId and string comparison
+        const catId = typeof m.category === 'object' ? m.category?._id : m.category
+        return catId === selectedCategory
+      })
     }
 
     if (searchQuery) {
@@ -368,17 +373,29 @@ function StaffPOS() {
                     className="menu-card"
                     onClick={() => addItemToOrder(menu)}
                   >
-                    {menu.image && (
-                      <img src={menu.image} alt={menu.name} className="menu-image" />
-                    )}
-                    {!menu.image && (
-                      <div className="menu-image-placeholder">
-                        <span>🍗</span>
+                    <div className="menu-img-wrapper">
+                      {menu.image && (
+                        <img src={menu.image} alt={menu.name} className="menu-image" onError={(e) => e.target.style.display='none'} />
+                      )}
+                      {!menu.image && (
+                        <div className="menu-image-placeholder">🍗</div>
+                      )}
+                      <div className="menu-badges">
+                        {menu.isVegan && <span className="badge vegan">🌱 Vegan</span>}
+                        {menu.isSpicy && <span className="badge spicy">🌶️ Cay</span>}
                       </div>
-                    )}
+                    </div>
                     <div className="menu-info">
-                      <h4>{menu.name}</h4>
-                      <p className="menu-price">{menu.price.toLocaleString()}đ</p>
+                      <h4 className="menu-name">{menu.name}</h4>
+                      <p className="menu-description">{menu.description}</p>
+                      <div className="menu-meta">
+                        {menu.preparationTime && <span className="meta-item">⏱️ {menu.preparationTime}min</span>}
+                        {menu.calories && <span className="meta-item">🔥 {menu.calories}cal</span>}
+                      </div>
+                      <div className="menu-footer">
+                        <span className="menu-price">{menu.price.toLocaleString()}đ</span>
+                        <button className="add-btn">+ Thêm</button>
+                      </div>
                     </div>
                   </div>
                 ))

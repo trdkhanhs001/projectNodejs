@@ -4,6 +4,7 @@ import UserHeader from '../components/UserHeader'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import apiClient from '../utils/apiClient'
+import showToast from '../utils/toast'
 import './Checkout.css'
 
 function Checkout() {
@@ -79,8 +80,34 @@ function Checkout() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (!orderData.phone) {
-      alert('⚠️ Vui lòng nhập số điện thoại')
+    // Validate required fields for online orders
+    if (!orderData.name || orderData.name.trim() === '') {
+      showToast('Vui lòng nhập tên khách hàng', 'warning')
+      return
+    }
+
+    if (!orderData.email || orderData.email.trim() === '') {
+      showToast('Vui lòng nhập email', 'warning')
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(orderData.email)) {
+      showToast('Email không hợp lệ', 'error')
+      return
+    }
+
+    if (!orderData.phone || orderData.phone.trim() === '') {
+      showToast('Vui lòng nhập số điện thoại', 'warning')
+      return
+    }
+
+    if (!/^[0-9]{10,11}$/.test(orderData.phone)) {
+      showToast('Số điện thoại phải là 10-11 chữ số', 'error')
+      return
+    }
+
+    if (!orderData.address || orderData.address.trim() === '') {
+      showToast('Vui lòng nhập địa chỉ giao hàng', 'warning')
       return
     }
 
@@ -88,8 +115,9 @@ function Checkout() {
       setLoading(true)
 
       if (!isAuthenticated) {
-        // Guest
+        // Online guest order - requires full info
         const res = await apiClient.post('/order/guest', {
+          orderType: 'ONLINE',
           items: cartItems.map(i => ({
             menuId: i._id,
             quantity: i.quantity
@@ -104,9 +132,9 @@ function Checkout() {
           paymentMethod: orderData.paymentMethod
         })
 
-        alert('✅ Thành công! #' + res.data.order.orderNumber)
+        showToast(`Được! Thành công tạo đơn #${res.data.order.orderNumber}`, 'success')
       } else {
-        // User
+        // Authenticated user order
         const res = await apiClient.post('/order', {
           deliveryAddress: orderData.address,
           notes: orderData.notes,
@@ -121,13 +149,13 @@ function Checkout() {
           })
         }
 
-        alert('✅ Thành công! #' + res.data.orderNumber)
+        showToast(`Được! Thành công tạo đơn #${res.data.orderNumber}`, 'success')
       }
 
       clearCart()
       navigate('/orders')
     } catch (err) {
-      alert('❌ ' + (err.response?.data?.message || err.message))
+      showToast(err.response?.data?.message || err.message || 'Lỗi đặt hàng', 'error')
     } finally {
       setLoading(false)
     }
@@ -157,35 +185,56 @@ function Checkout() {
           <form onSubmit={handleSubmit} className="card">
             <h3>Thông tin khách hàng</h3>
 
-            <input name="name" value={orderData.name} onChange={handleChange} placeholder="Tên" />
-            <input name="email" value={orderData.email} onChange={handleChange} placeholder="Email" />
+            <label>Tên <span className="required">*</span></label>
+            <input 
+              name="name" 
+              value={orderData.name} 
+              onChange={handleChange} 
+              placeholder="Nhập tên của bạn" 
+              required
+            />
 
+            <label>Email <span className="required">*</span></label>
+            <input 
+              name="email" 
+              type="email"
+              value={orderData.email} 
+              onChange={handleChange} 
+              placeholder="Nhập email của bạn" 
+              required
+            />
+
+            <label>Số điện thoại <span className="required">*</span></label>
             <input
               name="phone"
               value={orderData.phone}
               onChange={handleChange}
-              placeholder="SĐT *"
+              placeholder="Nhập 10-11 chữ số"
               required
             />
 
+            <label>Địa chỉ giao hàng <span className="required">*</span></label>
             <textarea
               name="address"
               value={orderData.address}
               onChange={handleChange}
-              placeholder="Địa chỉ"
+              placeholder="Nhập địa chỉ giao hàng"
+              required
             />
 
+            <label>Ghi chú (tùy chọn)</label>
             <textarea
               name="notes"
               value={orderData.notes}
               onChange={handleChange}
-              placeholder="Ghi chú"
+              placeholder="Ghi chú thêm (không bắt buộc)"
             />
 
+            <label>Phương thức thanh toán</label>
             <select name="paymentMethod" value={orderData.paymentMethod} onChange={handleChange}>
-              <option value="CASH">Tiền mặt</option>
-              <option value="CARD">Thẻ</option>
-              <option value="ONLINE">Online</option>
+              <option value="CASH">💵 Tiền mặt</option>
+              <option value="CARD">💳 Thẻ tín dụng</option>
+              <option value="ONLINE">📱 Thanh toán online</option>
             </select>
 
             {/* Discount */}
@@ -205,7 +254,7 @@ function Checkout() {
               </select>
             )}
 
-            <button disabled={loading}>
+            <button type="submit" disabled={loading}>
               {loading ? 'Đang xử lý...' : 'Đặt hàng'}
             </button>
           </form>

@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/Admin/AdminLayout'
 import apiClient from '../../utils/apiClient'
+import './AdminCommon.css'
 import './AdminDashboard.css'
 
 function AdminDashboard() {

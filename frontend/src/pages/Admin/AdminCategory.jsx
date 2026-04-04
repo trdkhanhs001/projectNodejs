@@ -1,10 +1,20 @@
-// Trang Quản lý Danh mục - thêm, sửa, xóa danh mục
+// Điềm Quản lý Danh mục - thêm, sửa, xóa danh mục
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/Admin/AdminLayout'
 import apiClient from '../../utils/apiClient'
+import showToast from '../../utils/toast'
+import { useAuth } from '../../contexts/AuthContext'
+import './AdminCommon.css'
 import './AdminCategory.css'
 
 function AdminCategory() {
+  const { user } = useAuth()
+  
+  // Debug: Log user info
+  useEffect(() => {
+    console.log('AdminCategory - Current user:', user)
+  }, [user])
+  
   // State cho danh sách danh mục
   const [categoryList, setCategoryList] = useState([])
   const [loading, setLoading] = useState(false)
@@ -42,7 +52,7 @@ function AdminCategory() {
       setLoading(false)
     } catch (err) {
       console.error('Error fetching categories:', err)
-      alert('Lỗi: ' + (err.response?.data?.message || err.message))
+      showToast('Lỗi tải danh mục: ' + (err.response?.data?.message || err.message), 'error')
       setLoading(false)
     }
   }
@@ -60,11 +70,6 @@ function AdminCategory() {
   const handleImageChange = (e) => {
     const file = e.target.files[0]
     if (file) {
-      console.log('Category image selected:', {
-        name: file.name,
-        type: file.type,
-        size: file.size
-      })
       setImageFile(file)
       // Tạo preview URL
       const reader = new FileReader()
@@ -87,31 +92,24 @@ function AdminCategory() {
       formDataToSend.append('isActive', formData.isActive)
 
       if (imageFile) {
-        console.log('Appending image file to FormData:', {
-          name: imageFile.name,
-          size: imageFile.size,
-          type: imageFile.type
-        })
         formDataToSend.append('image', imageFile)
       }
 
       // Nếu đang sửa
       if (editingId) {
-        console.log('Updating category:', editingId)
         await apiClient.put(`/category/${editingId}`, formDataToSend)
-        alert('✅ Cập nhật danh mục thành công!')
+        showToast('Đơn vị cập nhật thành công', 'success')
       } else {
         // Thêm mới
-        console.log('Creating new category')
         await apiClient.post('/category', formDataToSend)
-        alert('✅ Thêm danh mục thành công!')
+        showToast('Đơn vị thêm mới thành công', 'success')
       }
 
       resetForm()
       fetchCategoryList()
     } catch (err) {
       console.error('Error:', err)
-      alert('❌ Lỗi: ' + (err.response?.data?.message || err.message))
+      showToast('Lỗi: ' + (err.response?.data?.message || err.message), 'error')
     }
   }
 
@@ -184,19 +182,11 @@ function AdminCategory() {
   return (
     <AdminLayout>
       <div className="admin-category">
+        {/* Header */}
         <div className="category-header">
-          <h2>Quản lý Danh mục</h2>
-          <button 
-            className="btn btn-primary"
-            onClick={() => {
-              if (showForm) {
-                resetForm()
-              } else {
-                setShowForm(true)
-              }
-            }}
-          >
-            {showForm ? '❌ Hủy' : '➕ Thêm Danh mục'}
+          <h2>📁 Quản Lý Danh Mục</h2>
+          <button className="btn-add" onClick={() => setShowForm(!showForm)}>
+            <span>＋</span> Thêm Danh Mục
           </button>
         </div>
 
@@ -304,119 +294,104 @@ function AdminCategory() {
         )}
 
         {/* Danh sách danh mục */}
-        <div className="card">
-          <h3>Danh sách Danh mục ({categoryList.length})</h3>
-          {categoryList.length === 0 ? (
-            <p>Chưa có danh mục nào</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Tên danh mục</th>
-                  <th>Mô tả</th>
-                  <th>Thứ tự</th>
-                  <th>Trạng thái</th>
-                  <th>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryList.map(category => (
-                  <tr key={category._id}>
-                    <td><strong>{category.name}</strong></td>
-                    <td>{category.description || '—'}</td>
-                    <td>{category.displayOrder}</td>
-                    <td>
-                      <span className={`status-badge ${category.isActive ? 'active' : 'inactive'}`}>
-                        {category.isActive ? '✓ Hoạt động' : '✗ Tắt'}
-                      </span>
-                    </td>
-                    <td className="action-cell">
-                      <button 
-                        className="btn btn-small btn-info"
-                        onClick={() => handleView(category)}
-                      >
-                        👁️ Xem
-                      </button>
-                      <button 
-                        className="btn btn-small btn-secondary"
-                        onClick={() => handleEdit(category)}
-                      >
-                        ✏️ Sửa
-                      </button>
-                      <button 
-                        className="btn btn-small btn-danger"
-                        onClick={() => handleDelete(category._id)}
-                      >
-                        🗑️ Xóa
-                      </button>
-                    </td>
+        {loading ? (
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
+        ) : (
+          <>
+            <div className="category-table-container">
+              <table className="category-table">
+                <thead>
+                  <tr>
+                    <th>Ảnh</th>
+                    <th>Tên Danh Mục</th>
+                    <th>Mô Tả</th>
+                    <th>Thứ Tự</th>
+                    <th>Trạng Thái</th>
+                    <th>Hành Động</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+                </thead>
+                <tbody>
+                  {categoryList.length === 0 ? (
+                    <tr><td colSpan="6" className="empty-row">Không tìm thấy danh mục nào</td></tr>
+                  ) : (
+                    categoryList.map(category => (
+                      <tr key={category._id}>
+                        <td>
+                          {category.image
+                            ? <img src={category.image} alt={category.name} className="cat-thumb" onError={(e) => { e.target.style.display='none' }} />
+                            : <div className="cat-thumb-placeholder">📁</div>
+                          }
+                        </td>
+                        <td><strong>{category.name}</strong></td>
+                        <td className="cat-desc">{category.description || '—'}</td>
+                        <td>{category.displayOrder}</td>
+                        <td>
+                          <span className={`status-badge ${category.isActive ? 'available' : 'unavailable'}`}>
+                            {category.isActive ? '✓ Hoạt động' : '✗ Tắt'}
+                          </span>
+                        </td>
+                        <td>
+                          <div className="action-group">
+                            <button className="action-btn view-btn" onClick={() => handleView(category)} title="Xem chi tiết">👁️</button>
+                            <button className="action-btn edit-btn" onClick={() => handleEdit(category)} title="Sửa">✏️</button>
+                            <button className="action-btn del-btn" onClick={() => handleDelete(category._id)} title="Xóa">🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
 
         {/* Modal xem chi tiết danh mục */}
         {showViewModal && viewingCategory && (
           <div className="modal-overlay" onClick={closeViewModal}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <h3>📁 Chi tiết Danh mục</h3>
-                <button 
-                  className="btn-close"
-                  onClick={closeViewModal}
-                >
-                  ✕
+            <div className="modal-box modal-view" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-head">
+                <h3>📁 Chi Tiết Danh Mục</h3>
+                <button className="close-btn" onClick={closeViewModal}>✕</button>
+              </div>
+
+              <div className="view-content">
+                {viewingCategory.image && (
+                  <div className="view-image">
+                    <img src={viewingCategory.image} alt={viewingCategory.name} onError={(e) => e.target.style.display = 'none'} />
+                  </div>
+                )}
+                <div className="view-details">
+                  <div className="detail-row">
+                    <span className="detail-label">Tên Danh Mục:</span>
+                    <span className="detail-value"><strong>{viewingCategory.name}</strong></span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Thứ Tự:</span>
+                    <span className="detail-value">{viewingCategory.displayOrder}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Mô Tả:</span>
+                    <span className="detail-value">{viewingCategory.description || '(Không có mô tả)'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Trạng Thái:</span>
+                    <span className={`detail-value status-badge ${viewingCategory.isActive ? 'available' : 'unavailable'}`}>
+                      {viewingCategory.isActive ? '✓ Hoạt động' : '✗ Tắt'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button className="btn-edit" onClick={() => { closeViewModal(); handleEdit(viewingCategory); }}>
+                  ✏️ Sửa
                 </button>
-              </div>
-              <div className="modal-body">
-                {/* Image Section */}
-                <div className="category-image-section">
-                  {viewingCategory.image ? (
-                    <img 
-                      src={viewingCategory.image} 
-                      alt={viewingCategory.name}
-                      className="category-image-large"
-                    />
-                  ) : (
-                    <div className="category-image-large category-image-placeholder">
-                      <span style={{ fontSize: '60px' }}>🏷️</span>
-                    </div>
-                  )}
-                  <h2 className="category-name">{viewingCategory.name}</h2>
-                  <div className="status-info">
-                    {viewingCategory.isActive ? (
-                      <span className="status-badge active">✓ Hoạt động</span>
-                    ) : (
-                      <span className="status-badge inactive">✗ Tắt</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Info Section */}
-                <div className="category-info-section">
-                  <div className="info-item">
-                    <label>📝 Mô tả</label>
-                    <div className="info-value">
-                      {viewingCategory.description || '—'}
-                    </div>
-                  </div>
-
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label>🔢 Thứ tự hiển thị</label>
-                      <div className="info-value">{viewingCategory.displayOrder}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  className="btn btn-secondary"
-                  onClick={closeViewModal}
-                >
-                  ✕ Đóng
+                <button className="btn-cancel" onClick={closeViewModal}>
+                  Đóng
                 </button>
               </div>
             </div>

@@ -3,6 +3,7 @@ const OrderItem = require('../models/orderItem.model');
 const Menu = require('../models/menu.model');
 const User = require('../models/user.model');
 const Cart = require('../models/cart.model');
+const DiningTable = require('../models/diningTable.model');
 
 // Get all orders
 exports.getAllOrders = async () => {
@@ -78,7 +79,8 @@ exports.createOrder = async (userId, data) => {
     const orderItem = new OrderItem({
       menu: menuItem._id,
       quantity: cartItem.quantity,
-      price: menuItem.price,
+      unitPrice: menuItem.price,
+      subtotal: itemPrice,
       status: 'PENDING'
     });
     await orderItem.save();
@@ -94,6 +96,7 @@ exports.createOrder = async (userId, data) => {
     user: userId,
     items: orderItems,
     total: totalPrice,
+    orderType: 'ONLINE',
     deliveryAddress,
     notes,
     paymentMethod: paymentMethod || 'CASH',
@@ -158,6 +161,14 @@ exports.updateOrderStatus = async (orderId, data, user) => {
     }
     
     await order.save();
+
+    // Mark table as available if order is delivered or cancelled (for DINE_IN)
+    if ((status === 'DELIVERED' || status === 'CANCELLED') && order.tableNumber) {
+      await DiningTable.findOneAndUpdate(
+        { tableNumber: order.tableNumber.toString() },
+        { status: 'AVAILABLE' }
+      );
+    }
   }
 
   await order.populate('items');
@@ -179,14 +190,18 @@ exports.updatePaymentStatus = async (orderId, data) => {
 
 // Create guest order (no login required)
 exports.createGuestOrder = async (data) => {
-  const { items, guestInfo, notes, paymentMethod } = data;
+  const { items, guestInfo, notes, paymentMethod, orderType, tableNumber } = data;
 
   if (!items || items.length === 0) {
     throw new Error('Order items required');
   }
 
-  if (!guestInfo || !guestInfo.name || !guestInfo.phone) {
-    throw new Error('Guest info (name, phone) required');
+  // For DINE_IN orders (staff POS), guestInfo optional
+  // For DELIVERY/TAKEAWAY orders (user checkout), guestInfo required
+  if (orderType !== 'DINE_IN') {
+    if (!guestInfo || !guestInfo.name || !guestInfo.phone) {
+      throw new Error('Guest info (name, phone) required for delivery orders');
+    }
   }
 
   // Create order items
@@ -205,7 +220,8 @@ exports.createGuestOrder = async (data) => {
     const orderItem = new OrderItem({
       menu: menuItem._id,
       quantity: cartItem.quantity,
-      price: menuItem.price,
+      unitPrice: menuItem.price,
+      subtotal: itemPrice,
       status: 'PENDING'
     });
     await orderItem.save();
@@ -220,11 +236,13 @@ exports.createGuestOrder = async (data) => {
     orderNumber,
     items: orderItems,
     total: totalPrice,
-    guestName: guestInfo.name,
-    guestEmail: guestInfo.email || '',
-    guestPhone: guestInfo.phone,
-    guestAddress: guestInfo.address || '',
-    deliveryAddress: guestInfo.address || guestInfo.phone,
+    guestName: guestInfo?.name || '',
+    guestEmail: guestInfo?.email || '',
+    guestPhone: guestInfo?.phone || '',
+    guestAddress: guestInfo?.address || '',
+    deliveryAddress: guestInfo?.address || '',
+    tableNumber: tableNumber || null,
+    orderType: orderType || 'DELIVERY',
     notes: notes || '',
     paymentMethod: paymentMethod || 'CASH',
     paymentStatus: 'UNPAID',
@@ -233,6 +251,14 @@ exports.createGuestOrder = async (data) => {
 
   await order.save();
   await order.populate('items');
+
+  // Mark table as occupied if DINE_IN order
+  if (orderType === 'DINE_IN' && tableNumber) {
+    await DiningTable.findOneAndUpdate(
+      { tableNumber: tableNumber.toString() },
+      { status: 'OCCUPIED' }
+    );
+  }
 
   return {
     message: 'Guest order created successfully',
@@ -284,4 +310,41 @@ exports.getOrderStats = async () => {
     completed: await Order.countDocuments({ status: 'DELIVERED', isDeleted: false })
   };
   return stats;
+};
+
+// Get daily revenue summary
+exports.getDailySummary = async (date) => {
+  try {
+    // Parse date to get start and end of day
+    const parseDate = new Date(date);
+    parseDate.setHours(0, 0, 0, 0);
+    
+    const nextDay = new Date(parseDate);
+    nextDay.setDate(nextDay.getDate() + 1);
+    
+    // Query completed orders for the specific date
+    const completedOrders = await Order.find({
+      status: 'COMPLETED',
+      paymentStatus: 'PAID',
+      createdAt: {
+        $gte: parseDate,
+        $lt: nextDay
+      },
+      isDeleted: false
+    });
+    
+    const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalOrders = completedOrders.length;
+    const averagePerOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    
+    return {
+      date: date,
+      totalRevenue: Math.round(totalRevenue),
+      totalOrders,
+      averagePerOrder: Math.round(averagePerOrder),
+      orderDetails: completedOrders
+    };
+  } catch (error) {
+    throw new Error('Failed to get daily summary: ' + error.message);
+  }
 };

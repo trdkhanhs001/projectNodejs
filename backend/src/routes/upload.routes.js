@@ -31,6 +31,19 @@ router.post('/menu/:menuId', checkLogin, checkRole('ADMIN'), upload.single('file
 });
 
 /**
+ * POST /api/upload/staff/:staffId
+ * Upload staff avatar - requires admin
+ * Accepts: multipart/form-data with 'file' field
+ */
+router.post('/staff/:staffId', checkLogin, checkRole('ADMIN'), upload.single('file'), async function (req, res, next) {
+  try {
+    await uploadController.uploadStaffImage(req, res);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+/**
  * POST /api/upload/signature
  * Get upload signature for client-side upload
  * Used for temporary uploads before moving to permanent storage

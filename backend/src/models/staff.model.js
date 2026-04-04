@@ -2,6 +2,20 @@ const mongoose = require('mongoose');
 
 const staffSchema = new mongoose.Schema(
   {
+    username: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      minlength: [3, 'Username must be at least 3 characters'],
+      maxlength: [50, 'Username must not exceed 50 characters'],
+      match: [/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscore and hyphen']
+    },
+    password: {
+      type: String,
+      minlength: [6, 'Password must be at least 6 characters'],
+      select: false
+    },
     email: {
       type: String,
       required: [true, 'Email is required'],

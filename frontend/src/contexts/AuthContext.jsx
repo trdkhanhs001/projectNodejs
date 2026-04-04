@@ -1,5 +1,6 @@
 // AuthContext - Quản lý trạng thái authenticated
 import { createContext, useContext, useState, useEffect } from 'react'
+import axios from 'axios'
 import apiClient from '../utils/apiClient'
 
 // Tạo context
@@ -26,13 +27,17 @@ export function AuthProvider({ children }) {
   // Xác minh token với backend
   const verifyToken = async (token) => {
     try {
-      const response = await apiClient.get('/auth/profile', {
+      console.log('[AUTH] Verifying token...')
+      // Don't use apiClient here since it has its own interceptor
+      // Use axios directly with explicit Authorization header
+      const response = await axios.get(`${import.meta.env.VITE_API_URL || '/api'}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       })
+      console.log('[AUTH] Token verified, user:', response.data.user?.username)
       setUser(response.data.user)
       setLoading(false)
     } catch (err) {
-      console.error('Token verification failed:', err)
+      console.error('[AUTH] Token verification failed:', err.message)
       localStorage.removeItem('auth_token')
       setToken(null)
       setUser(null)
@@ -48,7 +53,7 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { token: newToken, user: userData } = response.data
+      const { accessToken: newToken, user: userData } = response.data
 
       localStorage.setItem('auth_token', newToken)
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
@@ -71,7 +76,7 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { token: newToken, user: userData } = response.data
+      const { accessToken: newToken, user: userData } = response.data
 
       localStorage.setItem('auth_token', newToken)
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
@@ -94,7 +99,7 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { token: newToken, user: userData } = response.data
+      const { accessToken: newToken, user: userData } = response.data
 
       localStorage.setItem('auth_token', newToken)
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
@@ -117,7 +122,7 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { token: newToken, user: userData } = response.data
+      const { accessToken: newToken, user: userData } = response.data
 
       // Lưu token vào localStorage
       localStorage.setItem('auth_token', newToken)

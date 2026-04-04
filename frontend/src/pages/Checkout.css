@@ -369,12 +369,79 @@
   border: 1px solid #ecf0f1;
 }
 
+.card form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .card h3 {
   margin: 0 0 20px 0;
   color: #2c3e50;
   font-weight: 700;
   border-bottom: 2px solid #3498db;
   padding-bottom: 12px;
+}
+
+.card label {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 6px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.required {
+  color: #e74c3c;
+  font-weight: 700;
+}
+
+.card input,
+.card textarea,
+.card select {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+.card input:focus,
+.card textarea:focus,
+.card select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.card textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.card button[type="submit"] {
+  padding: 12px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.card button[type="submit"]:hover:not(:disabled) {
+  background-color: #229954;
+}
+
+.card button[type="submit"]:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
 }
 
 /* Checkout Type Selector */

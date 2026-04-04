@@ -1,8 +1,8 @@
-// Trang Profile Admin
 import { useState, useEffect } from 'react'
 import AdminLayout from '../../components/Admin/AdminLayout'
 import { useAuth } from '../../contexts/AuthContext'
 import apiClient from '../../utils/apiClient'
+import './AdminCommon.css'
 import './AdminProfile.css'
 
 function AdminProfile() {
@@ -17,7 +17,6 @@ function AdminProfile() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
 
-  // Lấy thông tin profile từ API
   useEffect(() => {
     fetchProfile()
   }, [token])
@@ -27,7 +26,6 @@ function AdminProfile() {
       setLoading(true)
       const response = await apiClient.get('/admin/profile')
       const admin = response.data
-      
       setFormData({
         fullName: admin.fullName || '',
         email: admin.email || '',
@@ -36,7 +34,6 @@ function AdminProfile() {
       })
       setMessage({ type: '', text: '' })
     } catch (err) {
-      console.error('Error fetching profile:', err)
       setMessage({
         type: 'error',
         text: err.response?.data?.message || 'Không thể tải thông tin profile'
@@ -46,46 +43,31 @@ function AdminProfile() {
     }
   }
 
-  // Xử lý thay đổi input
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  // Xử lý submit form
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
+
+    if (!formData.fullName.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng nhập họ tên' })
+      return
+    }
+    if (!formData.email.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng nhập email' })
+      return
+    }
+
     try {
       setSaving(true)
-      
-      // Validate dữ liệu
-      if (!formData.fullName.trim()) {
-        setMessage({ type: 'error', text: 'Vui lòng nhập họ tên' })
-        return
-      }
-      
-      if (!formData.email.trim()) {
-        setMessage({ type: 'error', text: 'Vui lòng nhập email' })
-        return
-      }
-
-      // Gửi request update profile
       const response = await apiClient.put('/admin/profile', {
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone
       })
 
-      setMessage({
-        type: 'success',
-        text: 'Cập nhật thông tin thành công! ✅'
-      })
-
-      // Update lại form data từ response
       setFormData({
         fullName: response.data.fullName || '',
         email: response.data.email || '',
@@ -93,12 +75,9 @@ function AdminProfile() {
         username: response.data.username || ''
       })
 
-      setTimeout(() => {
-        setMessage({ type: '', text: '' })
-      }, 3000)
-
+      setMessage({ type: 'success', text: '✅ Cập nhật thông tin thành công!' })
+      setTimeout(() => setMessage({ type: '', text: '' }), 3000)
     } catch (err) {
-      console.error('Error updating profile:', err)
       setMessage({
         type: 'error',
         text: err.response?.data?.message || 'Lỗi cập nhật thông tin'
@@ -112,7 +91,10 @@ function AdminProfile() {
     return (
       <AdminLayout>
         <div className="profile-container">
-          <div className="loading">Đang tải thông tin...</div>
+          <div className="loading-state">
+            <div className="spinner"></div>
+            <p>Đang tải thông tin...</p>
+          </div>
         </div>
       </AdminLayout>
     )
@@ -121,107 +103,112 @@ function AdminProfile() {
   return (
     <AdminLayout>
       <div className="profile-container">
+
+        {/* Profile Card */}
         <div className="profile-card">
+          {/* Banner */}
+          <div className="profile-banner" />
+
+          {/* Header */}
           <div className="profile-header">
-            <div className="profile-avatar">
-              <span>👨‍💼</span>
-            </div>
-            <h2>Thông tin cá nhân</h2>
+            <div className="profile-avatar">👨‍💼</div>
+            <h2 className="profile-name">{formData.fullName || 'Admin'}</h2>
+            <span className="profile-role">{user?.role || 'Administrator'}</span>
           </div>
 
+          {/* Message */}
           {message.text && (
-            <div className={`message message-${message.type}`}>
+            <div className={`profile-message ${message.type}`}>
               {message.text}
             </div>
           )}
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="profile-form">
-            {/* Username - Read only */}
-            <div className="form-group">
-              <label htmlFor="username">Tên đăng nhập</label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                disabled
-                className="form-control disabled"
-              />
+            <div className="form-grid">
+
+              <div className="form-field">
+                <label>Tên đăng nhập</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  disabled
+                />
+                <span className="field-hint">Không thể thay đổi</span>
+              </div>
+
+              <div className="form-field">
+                <label>Họ tên <span className="req">*</span></label>
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="Nhập họ tên"
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Email <span className="req">*</span></label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="Nhập email"
+                  required
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Số điện thoại</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  placeholder="Nhập số điện thoại"
+                />
+              </div>
+
             </div>
 
-            {/* Full Name */}
-            <div className="form-group">
-              <label htmlFor="fullName">Họ tên *</label>
-              <input
-                type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập họ tên"
-                required
-              />
-            </div>
-
-            {/* Email */}
-            <div className="form-group">
-              <label htmlFor="email">Email *</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập email"
-                required
-              />
-            </div>
-
-            {/* Phone */}
-            <div className="form-group">
-              <label htmlFor="phone">Số điện thoại</label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
-                className="form-control"
-                placeholder="Nhập số điện thoại"
-              />
-            </div>
-
-            {/* Buttons */}
             <div className="form-actions">
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={saving}
-              >
-                {saving ? '🔄 Đang lưu...' : '💾 Cập nhật thông tin'}
+              <button type="submit" className="btn-save" disabled={saving}>
+                {saving ? '🔄 Đang lưu...' : '💾 Lưu thay đổi'}
               </button>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={fetchProfile}
-                disabled={saving}
-              >
+              <button type="button" className="btn-reset" onClick={fetchProfile} disabled={saving}>
                 🔄 Tải lại
               </button>
             </div>
           </form>
         </div>
 
-        <div className="profile-info">
-          <h3>ℹ️ Thông tin bổ sung</h3>
-          <ul>
-            <li><strong>Role:</strong> {user?.role || 'N/A'}</li>
-            <li><strong>Trạng thái:</strong> <span className="status-badge">Hoạt động</span></li>
-            <li><strong>Ngày tạo:</strong> {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('vi-VN') : 'N/A'}</li>
-          </ul>
+        {/* Info Card */}
+        <div className="info-card">
+          <p className="info-card-title">ℹ️ Thông tin bổ sung</p>
+          <div className="info-list">
+            <div className="info-item">
+              <span className="info-label">Vai trò</span>
+              <span className="info-value">{user?.role || 'N/A'}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Trạng thái</span>
+              <span className="status-active">✓ Hoạt động</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Ngày tạo tài khoản</span>
+              <span className="info-value">
+                {user?.createdAt
+                  ? new Date(user.createdAt).toLocaleDateString('vi-VN')
+                  : 'N/A'}
+              </span>
+            </div>
+          </div>
         </div>
+
       </div>
     </AdminLayout>
   )

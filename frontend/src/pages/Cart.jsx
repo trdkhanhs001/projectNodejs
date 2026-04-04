@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import UserHeader from '../components/UserHeader'
 import { useCart } from '../contexts/CartContext'
+import showToast from '../utils/toast'
 import './Cart.css'
 
 function Cart() {
@@ -8,13 +9,15 @@ function Cart() {
   const { cartItems, removeFromCart, updateQuantity, getTotalPrice, getTotalItems } = useCart()
 
   const handleQuantityChange = (menuId, newQuantity) => {
-    const qty = parseInt(newQuantity) || 0
+    let qty = parseInt(newQuantity) || 0
+    // Prevent 0 or negative quantities
+    if (qty < 1) qty = 1
     updateQuantity(menuId, qty)
   }
 
   const handleCheckout = () => {
     if (cartItems.length === 0) {
-      alert('⚠️ Giỏ hàng trống!')
+      showToast('Giỏ hàng trống', 'warning')
       return
     }
     navigate('/checkout')

@@ -82,10 +82,10 @@ function Orders() {
 
                     <div className="order-card-body">
                       <p className="customer-name">
-                        👤 {selectedOrder.user?.fullName || selectedOrder.user?.username || 'User'}
+                        👤 {order.user?.fullName || order.user?.username || 'User'}
                       </p>
                       <p className="order-items">
-                        {selectedOrder.items?.length || 0} món | {(selectedOrder.total || 0).toLocaleString()} đ
+                        {order.items?.length || 0} món | {(order.total || 0).toLocaleString()} đ
                       </p>
                     </div>
                   </div>

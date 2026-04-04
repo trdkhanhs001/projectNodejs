@@ -49,6 +49,7 @@ app.use('/api/admin', require('./routes/admin.routes'));
 app.use('/api/user', require('./routes/user.routes'));
 app.use('/api/category', require('./routes/category.routes'));
 app.use('/api/menu', require('./routes/menu.routes'));
+app.use('/api/table', require('./routes/table.routes'));
 app.use('/api/staff', require('./routes/staff.routes'));
 app.use('/api/cart', require('./routes/cart.routes'));
 app.use('/api/order', require('./routes/order.routes'));

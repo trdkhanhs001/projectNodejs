@@ -30,7 +30,7 @@ const errorHandler = (err, req, res, next) => {
       field: detail.path.join('.'),
       message: detail.message,
       type: detail.type
-    })) : error.message;
+    })) : err.message;
   }
 
   // Handle Mongoose validation errors

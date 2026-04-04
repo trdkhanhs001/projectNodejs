@@ -3,6 +3,7 @@ const User = require('../models/user.model');
 const Menu = require('../models/menu.model');
 const Order = require('../models/order.model');
 const mongoose = require('mongoose');
+const { buildSafeSearchQuery } = require('../utils/security');
 
 // ========== ADMIN PROFILE (4.1) ==========
 // Get admin profile
@@ -33,12 +34,11 @@ exports.getAllUsers = async (filters = {}, page = 1, limit = 10) => {
   
   const query = {};
   if (filters.role) query.role = filters.role;
+  
+  // Use safe search query builder to prevent NoSQL injection
   if (filters.search) {
-    query.$or = [
-      { username: { $regex: filters.search, $options: 'i' } },
-      { email: { $regex: filters.search, $options: 'i' } },
-      { fullName: { $regex: filters.search, $options: 'i' } }
-    ];
+    const searchQuery = buildSafeSearchQuery(filters.search, ['username', 'email', 'fullName']);
+    Object.assign(query, searchQuery);
   }
 
   const users = await User.find(query)

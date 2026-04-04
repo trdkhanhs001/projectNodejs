@@ -6,6 +6,11 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
+    "seed": "node scripts/seed.js",
+    "seed:admin": "node scripts/seedAdmin.js",
+    "seed:staff": "node scripts/seedStaff.js",
+    "seed:menu": "node scripts/seedMenu.js",
+    "seed:tables": "node scripts/seedTables.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

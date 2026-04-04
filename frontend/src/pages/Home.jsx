@@ -17,9 +17,7 @@ function Home() {
   const { addToCart, getTotalItems } = useCart()
   const { isAuthenticated } = useAuth()
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  useEffect(() => { fetchData() }, [])
 
   const fetchData = async () => {
     try {
@@ -31,22 +29,17 @@ function Home() {
       setCategoryList(categoriesRes.data)
       setMenuList(menuRes.data)
     } catch (err) {
-      console.error('❌ Lỗi tải dữ liệu:', err)
+      console.error('Lỗi tải dữ liệu:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // ✅ Tối ưu filter (tránh lag)
   const filteredMenu = useMemo(() => {
     let filtered = menuList
-
-    // Filter by category
     if (selectedCategory) {
       filtered = filtered.filter(item => item.category?._id === selectedCategory)
     }
-
-    // Filter by search term
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase()
       filtered = filtered.filter(item =>
@@ -55,49 +48,37 @@ function Home() {
         item.ingredients?.toLowerCase().includes(term)
       )
     }
-
     return filtered
   }, [menuList, selectedCategory, searchTerm])
 
   const handleAddToCart = (menuItem) => {
     const previousTotal = getTotalItems()
     addToCart(menuItem, 1)
-    showNotification(`✅ Đã thêm "${menuItem.name}"`)
-    
-    // Nếu giỏ trướ đó trống (first item) và user chưa login -> show checkout options
+    showNotification(`Đã thêm "${menuItem.name}"`)
     if (previousTotal === 0 && !isAuthenticated) {
-      setTimeout(() => {
-        setShowCheckoutModal(true)
-      }, 500)
+      setTimeout(() => setShowCheckoutModal(true), 500)
     }
   }
 
   const showNotification = (message) => {
     const id = Date.now()
-
     setNotifications(prev => [...prev, { id, message }])
-
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id))
-    }, 2500)
+    setTimeout(() => setNotifications(prev => prev.filter(n => n.id !== id)), 2500)
   }
 
   return (
     <div className="home-page">
       <UserHeader />
 
-      {/* Checkout Options Modal */}
-      <CheckoutOptionsModal 
-        isOpen={showCheckoutModal} 
+      <CheckoutOptionsModal
+        isOpen={showCheckoutModal}
         onClose={() => setShowCheckoutModal(false)}
       />
 
       {/* Notifications */}
       <div className="notifications-container">
         {notifications.map(n => (
-          <div key={n.id} className="notification">
-            {n.message}
-          </div>
+          <div key={n.id} className="notification">✓ {n.message}</div>
         ))}
       </div>
 
@@ -105,36 +86,45 @@ function Home() {
         {/* Hero */}
         <section className="hero-banner">
           <div className="hero-content">
-            <h1>🍽️ Nhà Hàng ABC</h1>
-            <p>Đồ ăn ngon, phục vụ tận tình - Trải nghiệm ẩm thực tuyệt vời</p>
+            <span className="hero-eyebrow">Chào mừng đến với</span>
+            <h1>Nhà Hàng ABC</h1>
+            <p>Đồ ăn ngon, phục vụ tận tình — Trải nghiệm ẩm thực tuyệt vời mỗi ngày</p>
             <div className="hero-stats">
               <div className="stat">
                 <span className="stat-number">500+</span>
                 <span className="stat-label">Món ăn</span>
               </div>
               <div className="stat">
-                <span className="stat-number">1000+</span>
+                <span className="stat-number">1K+</span>
                 <span className="stat-label">Khách hàng</span>
               </div>
               <div className="stat">
-                <span className="stat-number">5⭐</span>
+                <span className="stat-number">5 ⭐</span>
                 <span className="stat-label">Đánh giá</span>
               </div>
             </div>
           </div>
           <div className="hero-image">
-            <img src="/hero-food.jpg" alt="Delicious food" onError={(e) => e.target.style.display = 'none'} />
+            <img
+              src="/hero-food.jpg"
+              alt="Món ăn ngon"
+              onError={(e) => e.target.style.display = 'none'}
+            />
           </div>
         </section>
 
         <div className="menu-content">
-          {/* Featured Items */}
+          {/* Featured */}
           {menuList.length > 0 && (
             <section className="featured-section">
               <h2>⭐ Món Ăn Nổi Bật</h2>
               <div className="featured-grid">
                 {menuList.slice(0, 4).map(item => (
-                  <div key={item._id} className="featured-card" onClick={() => handleAddToCart(item)}>
+                  <div
+                    key={item._id}
+                    className="featured-card"
+                    onClick={() => handleAddToCart(item)}
+                  >
                     <div className="featured-image">
                       <img
                         src={item.image || '/no-image.png'}
@@ -144,7 +134,7 @@ function Home() {
                     </div>
                     <div className="featured-info">
                       <h3>{item.name}</h3>
-                      <p className="featured-price">{item.price?.toLocaleString()} đ</p>
+                      <p className="featured-price">{item.price?.toLocaleString('vi-VN')} đ</p>
                     </div>
                   </div>
                 ))}
@@ -152,36 +142,32 @@ function Home() {
             </section>
           )}
 
-          {/* Search Bar */}
+          {/* Search */}
           <div className="search-section">
             <div className="search-container">
               <input
                 type="text"
-                placeholder="🔍 Tìm kiếm món ăn..."
+                placeholder="Tìm kiếm món ăn..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input"
               />
               {searchTerm && (
-                <button
-                  className="clear-search"
-                  onClick={() => setSearchTerm('')}
-                >
-                  ✕
-                </button>
+                <button className="clear-search" onClick={() => setSearchTerm('')}>✕</button>
               )}
             </div>
           </div>
 
-          {/* Category */}
+          {/* Category sidebar */}
           <aside className="category-filter">
-            <h3>📂 Danh mục</h3>
+            <h3>Danh mục</h3>
 
             <button
               className={`category-btn ${!selectedCategory ? 'active' : ''}`}
               onClick={() => setSelectedCategory(null)}
             >
-              Tất cả ({menuList.length})
+              Tất cả
+              <span className="cat-count">{menuList.length}</span>
             </button>
 
             {categoryList.map(cat => {
@@ -192,13 +178,14 @@ function Home() {
                   className={`category-btn ${selectedCategory === cat._id ? 'active' : ''}`}
                   onClick={() => setSelectedCategory(cat._id)}
                 >
-                  {cat.name} ({count})
+                  {cat.name}
+                  <span className="cat-count">{count}</span>
                 </button>
               )
             })}
           </aside>
 
-          {/* Menu */}
+          {/* Menu grid */}
           <main className="menu-grid-section">
             <div className="menu-header">
               <h2>
@@ -206,15 +193,13 @@ function Home() {
                   ? categoryList.find(c => c._id === selectedCategory)?.name
                   : 'Tất cả món'}
               </h2>
-              <p className="item-count">{filteredMenu.length} món</p>
+              <span className="item-count">{filteredMenu.length} món</span>
             </div>
 
             {loading ? (
-              <div className="loading">⏳ Đang tải...</div>
+              <div className="loading">Đang tải thực đơn...</div>
             ) : filteredMenu.length === 0 ? (
-              <div className="empty-state">
-                😐 Không có món nào
-              </div>
+              <div className="empty-state">Không tìm thấy món nào phù hợp</div>
             ) : (
               <div className="menu-grid">
                 {filteredMenu.map(item => (
@@ -225,13 +210,12 @@ function Home() {
                         alt={item.name}
                         onError={(e) => (e.target.src = '/no-image.png')}
                       />
-
                       <div className="menu-card-overlay">
                         <button
                           className="btn-add-cart"
                           onClick={() => handleAddToCart(item)}
                         >
-                          🛒 Thêm
+                          🛒 Thêm vào giỏ
                         </button>
                       </div>
                     </div>
@@ -245,14 +229,13 @@ function Home() {
 
                       {item.ingredients && (
                         <p className="menu-ingredients">
-                          📦 {item.ingredients.slice(0, 40)}
-                          {item.ingredients.length > 40 && '...'}
+                          {item.ingredients.slice(0, 50)}{item.ingredients.length > 50 && '...'}
                         </p>
                       )}
 
                       <div className="menu-footer">
                         <span className="menu-price">
-                          {item.price?.toLocaleString()} đ
+                          {item.price?.toLocaleString('vi-VN')} đ
                         </span>
                         <span className="menu-category">
                           {item.category?.name}

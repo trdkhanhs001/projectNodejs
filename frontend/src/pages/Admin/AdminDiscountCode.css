@@ -1,3 +1,5 @@
+
+
 .admin-discount-code {
   width: 100%;
 }
@@ -150,6 +152,7 @@
   display: flex;
   gap: 8px;
 }
+
 
 .btn-small {
   padding: 6px 12px !important;

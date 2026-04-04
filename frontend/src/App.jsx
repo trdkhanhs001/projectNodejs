@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './contexts/AuthContext'
 import { CartProvider } from './contexts/CartContext'
 import RoleBasedRoute from './components/RoleBasedRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import AdminLogin from './pages/AdminLogin'
 import StaffLogin from './pages/StaffLogin'
 
@@ -14,6 +15,7 @@ import UserProfile from './pages/UserProfile'
 
 // Staff Pages
 import StaffDashboard from './pages/Staff/StaffDashboard'
+import StaffPOS from './pages/Staff/StaffPOS'
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/AdminDashboard'
@@ -33,7 +35,9 @@ function App() {
             {/* ============ Public Routes ============ */}
             <Route path="/" element={<Home />} />
             <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/staff-login" element={<StaffLogin />} />
+            <Route path="/staff/login" element={<StaffLogin />} />
 
             {/* ============ User Routes ============ */}
             <Route path="/cart" element={<RoleBasedRoute requiredRole="USER"><Cart /></RoleBasedRoute>} />
@@ -43,15 +47,16 @@ function App() {
 
             {/* ============ Staff Routes ============ */}
             <Route path="/staff" element={<RoleBasedRoute requiredRole="STAFF"><StaffDashboard /></RoleBasedRoute>} />
+            <Route path="/staff/pos" element={<RoleBasedRoute requiredRole="STAFF"><StaffPOS /></RoleBasedRoute>} />
 
             {/* ============ Admin Routes ============ */}
-            <Route path="/admin" element={<RoleBasedRoute requiredRole="ADMIN"><AdminDashboard /></RoleBasedRoute>} />
-            <Route path="/admin/users" element={<RoleBasedRoute requiredRole="ADMIN"><AdminUsers /></RoleBasedRoute>} />
-            <Route path="/admin/staff" element={<RoleBasedRoute requiredRole="ADMIN"><AdminStaff /></RoleBasedRoute>} />
-            <Route path="/admin/category" element={<RoleBasedRoute requiredRole="ADMIN"><AdminCategory /></RoleBasedRoute>} />
-            <Route path="/admin/menu" element={<RoleBasedRoute requiredRole="ADMIN"><AdminMenu /></RoleBasedRoute>} />
-            <Route path="/admin/orders" element={<RoleBasedRoute requiredRole="ADMIN"><AdminOrders /></RoleBasedRoute>} />
-            <Route path="/admin/profile" element={<RoleBasedRoute requiredRole="ADMIN"><AdminProfile /></RoleBasedRoute>} />
+            <Route path="/admin" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminDashboard /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/users" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminUsers /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/staff" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminStaff /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/category" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminCategory /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/menu" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminMenu /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/orders" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminOrders /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/profile" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminProfile /></RoleBasedRoute></ErrorBoundary>} />
 
             {/* ============ Not Found ============ */}
             <Route path="*" element={<Navigate to="/" replace />} />

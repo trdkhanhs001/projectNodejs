@@ -1,6 +1,7 @@
 const cloudinary = require('../config/cloudinary');
 const User = require('../models/user.model');
 const Menu = require('../models/menu.model');
+const Staff = require('../models/staff.model');
 
 /**
  * Upload user avatar to Cloudinary
@@ -100,6 +101,63 @@ exports.uploadMenuImage = async (req, res) => {
           });
         } catch (err) {
           res.status(400).json({ message: 'Failed to update menu: ' + err.message });
+        }
+      }
+    );
+
+    uploadStream.end(req.file.buffer);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error: ' + err.message });
+  }
+};
+
+/**
+ * Upload staff avatar to Cloudinary
+ */
+exports.uploadStaffImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file provided' });
+    }
+
+    const { staffId } = req.params;
+
+    // Check if staff exists
+    const staff = await Staff.findById(staffId);
+    if (!staff) {
+      return res.status(404).json({ message: 'Staff not found' });
+    }
+
+    // Upload to Cloudinary using upload_stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'restaurant/staff',
+        resource_type: 'auto',
+        public_id: `staff_${staffId}`,
+        overwrite: true,
+        format: 'jpg',
+        quality: 'auto'
+      },
+      async (error, result) => {
+        if (error) {
+          return res.status(400).json({ message: 'Upload failed: ' + error.message });
+        }
+
+        try {
+          // Update staff avatar URL in database
+          const updatedStaff = await Staff.findByIdAndUpdate(
+            staffId,
+            { avatar: result.secure_url },
+            { new: true }
+          );
+
+          res.status(200).json({
+            message: 'Staff avatar uploaded successfully',
+            url: result.secure_url,
+            staff: updatedStaff
+          });
+        } catch (err) {
+          res.status(400).json({ message: 'Failed to update staff: ' + err.message });
         }
       }
     );

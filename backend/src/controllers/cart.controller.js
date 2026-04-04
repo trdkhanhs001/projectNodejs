@@ -7,53 +7,55 @@ exports.getCart = async (userId) => {
   return cart;
 };
 
-// Add item to cart
+// Add item to cart - Using atomic operations to prevent race conditions
 exports.addToCart = async (userId, { menuId, quantity }) => {
-  let cart = await Cart.findOne({ user: userId });
-  
-  if (!cart) {
-    cart = new Cart({ user: userId, items: [] });
-  }
-
+  // Verify menu item exists
   const menuItem = await Menu.findById(menuId);
   if (!menuItem) {
     throw new Error('Menu item not found');
   }
 
-  const existingItem = cart.items.find(item => item.menu.toString() === menuId);
-  
-  if (existingItem) {
-    existingItem.quantity += quantity;
-  } else {
-    cart.items.push({ menu: menuId, quantity });
+  // Use atomic update operator to prevent race conditions
+  let cart = await Cart.findOneAndUpdate(
+    { user: userId, 'items.menu': menuId },
+    { $inc: { 'items.$.quantity': quantity } },
+    { new: true }
+  ).populate('items.menu');
+
+  // If item doesn't exist, add it
+  if (!cart || cart.items.length === 0) {
+    cart = await Cart.findOneAndUpdate(
+      { user: userId },
+      { $push: { items: { menu: menuId, quantity } } },
+      { new: true, upsert: true }
+    ).populate('items.menu');
   }
 
-  await cart.save();
-  await cart.populate('items.menu');
   return cart;
 };
 
-// Update cart item quantity
+// Update cart item quantity - Using atomic operations
 exports.updateCartItem = async (userId, itemId, { quantity }) => {
-  const cart = await Cart.findOne({ user: userId });
-  
+  if (quantity <= 0) {
+    // Remove item if quantity becomes 0 or negative
+    const cart = await Cart.findOneAndUpdate(
+      { user: userId },
+      { $pull: { items: { _id: itemId } } },
+      { new: true }
+    ).populate('items.menu');
+    return cart;
+  }
+
+  const cart = await Cart.findOneAndUpdate(
+    { user: userId, 'items._id': itemId },
+    { $set: { 'items.$.quantity': quantity } },
+    { new: true }
+  ).populate('items.menu');
+
   if (!cart) {
-    throw new Error('Cart not found');
+    throw new Error('Cart or item not found');
   }
 
-  const item = cart.items.find(i => i._id.toString() === itemId);
-  if (!item) {
-    throw new Error('Item not found in cart');
-  }
-
-  if (quantity > 0) {
-    item.quantity = quantity;
-  } else {
-    cart.items = cart.items.filter(i => i._id.toString() !== itemId);
-  }
-
-  await cart.save();
-  await cart.populate('items.menu');
   return cart;
 };
 

@@ -1,15 +1,51 @@
 const Staff = require('../models/staff.model');
 const cloudinary = require('../config/cloudinary');
 const bcrypt = require('bcrypt');
+const { buildSafeSearchQuery } = require('../utils/security');
 
-// Get all staff
-exports.getAllStaff = async () => {
+// Get all staff with pagination and search
+exports.getAllStaff = async (filters = {}, page = 1, limit = 10) => {
   try {
-    const staff = await Staff.find({ isDeleted: false })
-      .select('fullName email phone position salary address avatar role isActive startDate');
-    return staff;
+    const skip = (page - 1) * limit;
+    
+    // Build query
+    const query = {};
+    
+    // Use safe search query builder to prevent NoSQL injection
+    if (filters.search) {
+      const searchQuery = buildSafeSearchQuery(filters.search, ['fullName', 'email', 'phone', 'position']);
+      Object.assign(query, searchQuery);
+    }
+
+    console.log('[STAFF CONTROLLER] Query:', query);
+
+    // Use .select('+isDeleted') to explicitly include the field that has select: false
+    let staff = await Staff.find(query)
+      .select('fullName email phone position salary address avatar role isActive startDate')
+      .select('+isDeleted')  // Explicitly include isDeleted field
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Filter out soft-deleted records
+    staff = staff.filter(doc => doc.isDeleted !== true);
+
+    console.log('[STAFF CONTROLLER] Found active staff:', staff.length);
+
+    // Get total count
+    const allDocs = await Staff.find(query).select('+isDeleted').lean();
+    const total = allDocs.filter(doc => doc.isDeleted !== true).length;
+
+    return {
+      staff,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit)
+    };
   } catch (error) {
-    console.error('[STAFF] Error fetching staff:', error);
+    console.error('[STAFF CONTROLLER] Error fetching staff:', error);
     throw error;
   }
 };
@@ -140,4 +176,40 @@ exports.deleteStaff = async (id) => {
 // Reset staff password (Not used - staff use hardcoded POS account)
 exports.resetStaffPassword = async (id, newPassword) => {
   throw new Error('Staff do not have individual login accounts. Use hardcoded POS account.');
+};
+
+// Get today's revenue statistics
+exports.getTodayStats = async () => {
+  const Order = require('../models/order.model');
+  
+  // Get today's date range (start of day to end of day)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  try {
+    // Query completed orders from today
+    const completedOrders = await Order.find({
+      status: 'COMPLETED',
+      createdAt: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    });
+    
+    const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+    const totalOrders = completedOrders.length;
+    const averagePerOrder = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    
+    return {
+      totalRevenue: Math.round(totalRevenue),
+      totalOrders,
+      averagePerOrder: Math.round(averagePerOrder),
+      date: today.toISOString().split('T')[0]
+    };
+  } catch (error) {
+    throw new Error('Failed to fetch today stats: ' + error.message);
+  }
 };

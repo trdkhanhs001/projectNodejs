@@ -49,7 +49,66 @@ const isCommonPassword = (password) => {
   );
 };
 
+/**
+ * Escape special regex characters to prevent regex injection
+ * @param {string} str - The string to escape
+ * @returns {string} The escaped string safe for use in regex
+ */
+const escapeRegex = (str) => {
+  if (!str) return '';
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+/**
+ * Validate and sanitize search query
+ * @param {string} query - The search query to sanitize
+ * @param {number} maxLength - Maximum allowed length
+ * @returns {string|null} Sanitized query or null if invalid
+ */
+const sanitizeSearchQuery = (query, maxLength = 100) => {
+  if (!query) return null;
+  
+  // Remove leading/trailing whitespace
+  query = query.trim();
+  
+  // Check length
+  if (query.length > maxLength) {
+    return null;
+  }
+  
+  // Check for suspicious patterns
+  if (/[<>\"'%;()&+]/.test(query)) {
+    return null;
+  }
+  
+  return query;
+};
+
+/**
+ * Build safe search query for MongoDB
+ * @param {string} searchTerm - The search term
+ * @param {array} fields - Fields to search in
+ * @returns {object} MongoDB query object
+ */
+const buildSafeSearchQuery = (searchTerm, fields = []) => {
+  if (!searchTerm || fields.length === 0) return {};
+  
+  const sanitized = sanitizeSearchQuery(searchTerm);
+  if (!sanitized) return {};
+  
+  const escapedTerm = escapeRegex(sanitized);
+  
+  return {
+    $or: fields.map(field => ({
+      [field]: { $regex: escapedTerm, $options: 'i' }
+    }))
+  };
+};
+
 module.exports = {
   validatePasswordStrength,
-  isCommonPassword
+  isCommonPassword,
+  escapeRegex,
+  sanitizeSearchQuery,
+  buildSafeSearchQuery
 };
