@@ -21,7 +21,7 @@ exports.getReviewById = async (id) => {
 };
 
 // Create new review
-exports.createReview = async (userId, { menuId, rating, comment }) => {
+exports.createReview = async (userId, { menuId, rating, comment, order }) => {
   // Check if menu exists
   const menu = await Menu.findById(menuId);
   if (!menu) {
@@ -32,6 +32,7 @@ exports.createReview = async (userId, { menuId, rating, comment }) => {
     user: userId,
     menu: menuId,
     rating,
+    order,
     comment
   });
 
