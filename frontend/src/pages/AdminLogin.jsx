@@ -32,67 +32,145 @@ function AdminLogin() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 min-h-screen">
-      {/* LEFT — Branding */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col justify-center items-center p-12 relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl"></div>
-        
-        <div className="relative z-10 max-w-sm text-center">
-          <div className="text-6xl mb-6">🍽️</div>
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Nhà Hàng <span className="text-amber-500">ABC</span>
-          </h1>
-          <p className="text-gray-300 mb-8 text-lg">
-            Hệ thống quản lý nhà hàng toàn diện — Nhanh chóng, chính xác, hiệu quả
-          </p>
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
 
-          <div className="space-y-4">
-            <div className="flex items-start gap-4 text-gray-300">
-              <span className="text-3xl">📦</span>
-              <div className="text-left">
-                <strong className="text-white block">Quản lý đơn hàng</strong>
-                <span className="text-sm">Theo dõi realtime mọi đơn</span>
-              </div>
+      {/* ── LEFT: Branding ── */}
+      <div style={{
+        background: 'linear-gradient(160deg, #0f0e0b 0%, #1a1410 60%, #221a0e 100%)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '3rem',
+        position: 'relative',
+        overflow: 'hidden',
+        borderRight: '1px solid rgba(212,175,100,0.12)',
+      }}>
+        {/* Decorative glow blobs */}
+        <div style={{
+          position: 'absolute', top: '-80px', right: '-80px',
+          width: '400px', height: '400px',
+          background: 'radial-gradient(circle, rgba(212,175,100,0.07) 0%, transparent 70%)',
+          borderRadius: '50%',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: '-100px', left: '-100px',
+          width: '500px', height: '500px',
+          background: 'radial-gradient(circle, rgba(212,175,100,0.04) 0%, transparent 70%)',
+          borderRadius: '50%',
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: '360px', width: '100%' }}>
+          {/* Logo */}
+          <div style={{ marginBottom: '2.5rem' }}>
+            <div style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2.6rem',
+              fontWeight: 700,
+              color: 'var(--color-gold)',
+              lineHeight: 1.1,
+              marginBottom: '0.5rem',
+              letterSpacing: '0.02em',
+            }}>
+              Nhà Hàng ABC
             </div>
-            <div className="flex items-start gap-4 text-gray-300">
-              <span className="text-3xl">🍴</span>
-              <div className="text-left">
-                <strong className="text-white block">Quản lý thực đơn</strong>
-                <span className="text-sm">Thêm, sửa, xóa dễ dàng</span>
+            <div style={{
+              width: '48px', height: '2px',
+              background: 'linear-gradient(90deg, var(--color-gold), transparent)',
+              marginBottom: '1rem',
+            }} />
+            <p style={{
+              color: 'var(--color-text-muted)',
+              fontSize: '0.9rem',
+              lineHeight: 1.6,
+            }}>
+              Hệ thống quản lý nhà hàng toàn diện — Nhanh chóng, chính xác, hiệu quả
+            </p>
+          </div>
+
+          {/* Feature list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            {[
+              { icon: '📦', title: 'Quản lý đơn hàng', desc: 'Theo dõi realtime mọi đơn' },
+              { icon: '🍴', title: 'Quản lý thực đơn', desc: 'Thêm, sửa, xóa dễ dàng' },
+              { icon: '👥', title: 'Quản lý nhân viên', desc: 'Phân quyền & theo dõi ca' },
+            ].map((item) => (
+              <div key={item.title} style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '1rem',
+                padding: '1rem',
+                background: 'rgba(212,175,100,0.04)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+              }}>
+                <span style={{ fontSize: '1.4rem', lineHeight: 1 }}>{item.icon}</span>
+                <div>
+                  <div style={{
+                    color: 'var(--color-text)',
+                    fontWeight: 600,
+                    fontSize: '0.9rem',
+                    marginBottom: '0.2rem',
+                  }}>{item.title}</div>
+                  <div style={{
+                    color: 'var(--color-text-muted)',
+                    fontSize: '0.8rem',
+                  }}>{item.desc}</div>
+                </div>
               </div>
-            </div>
-            <div className="flex items-start gap-4 text-gray-300">
-              <span className="text-3xl">👥</span>
-              <div className="text-left">
-                <strong className="text-white block">Quản lý nhân viên</strong>
-                <span className="text-sm">Phân quyền & theo dõi ca</span>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* RIGHT — Login Form */}
-      <div className="bg-white flex justify-center items-center p-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Đăng nhập</h2>
-            <p className="text-gray-600">Nhập thông tin tài khoản admin để tiếp tục</p>
+      {/* ── RIGHT: Login Form ── */}
+      <div style={{
+        background: 'var(--color-bg)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '3rem',
+      }}>
+        <div style={{ width: '100%', maxWidth: '400px' }} className="animate-slide-up">
+
+          {/* Header */}
+          <div style={{ marginBottom: '2rem' }}>
+            <span style={{
+              display: 'inline-block',
+              padding: '0.2rem 0.75rem',
+              background: 'rgba(212,175,100,0.1)',
+              border: '1px solid rgba(212,175,100,0.2)',
+              borderRadius: '999px',
+              color: 'var(--color-gold)',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              marginBottom: '1rem',
+            }}>Admin Portal</span>
+            <h2 style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '2rem',
+              fontWeight: 700,
+              color: 'var(--color-text)',
+              marginBottom: '0.4rem',
+            }}>Đăng nhập</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+              Nhập thông tin tài khoản admin để tiếp tục
+            </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="alert alert-error">
-                ⚠️ {error}
-              </div>
-            )}
+          {/* Error alert */}
+          {error && (
+            <div className="alert alert-error" style={{ marginBottom: '1.5rem' }}>
+              ⚠️ {error}
+            </div>
+          )}
 
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                Tên đăng nhập
-              </label>
+          <form onSubmit={handleSubmit}>
+            {/* Username */}
+            <div className="form-group">
+              <label htmlFor="username">Tên đăng nhập</label>
               <input
                 id="username"
                 type="text"
@@ -102,15 +180,13 @@ function AdminLogin() {
                 disabled={loading}
                 autoFocus
                 autoComplete="username"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
               />
             </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Mật khẩu
-              </label>
-              <div className="relative">
+            {/* Password */}
+            <div className="form-group">
+              <label htmlFor="password">Mật khẩu</label>
+              <div style={{ position: 'relative' }}>
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -119,37 +195,70 @@ function AdminLogin() {
                   placeholder="Nhập mật khẩu"
                   disabled={loading}
                   autoComplete="current-password"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
+                  style={{ paddingRight: '3rem' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
                   tabIndex={-1}
+                  style={{
+                    position: 'absolute',
+                    right: '0.875rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-text-muted)',
+                    fontSize: '1rem',
+                    lineHeight: 1,
+                    padding: 0,
+                  }}
                 >
                   {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
             </div>
 
+            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+              className="btn btn-primary btn-full btn-lg"
+              style={{ marginTop: '0.5rem' }}
             >
               {loading ? (
                 <>
-                  <div className="animate-spin-slow w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+                  <span className="spinner" style={{
+                    width: '16px', height: '16px',
+                    border: '2px solid rgba(0,0,0,0.2)',
+                    borderTopColor: '#000',
+                    borderRadius: '50%',
+                    display: 'inline-block',
+                  }} />
                   Đang đăng nhập...
                 </>
-              ) : (
-                'Đăng nhập →'
-              )}
+              ) : 'Đăng nhập →'}
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-gray-200 text-center text-sm text-gray-600">
-            Dành cho nhân viên? <a href="/staff-login" className="text-blue-600 hover:text-blue-700 font-medium">Đăng nhập Staff</a>
+          {/* Footer */}
+          <div style={{
+            marginTop: '1.75rem',
+            paddingTop: '1.5rem',
+            borderTop: '1px solid var(--color-border)',
+            textAlign: 'center',
+            fontSize: '0.85rem',
+            color: 'var(--color-text-muted)',
+          }}>
+            Dành cho nhân viên?{' '}
+            <a href="/staff-login" style={{
+              color: 'var(--color-gold)',
+              textDecoration: 'none',
+              fontWeight: 500,
+            }}>
+              Đăng nhập Staff
+            </a>
           </div>
         </div>
       </div>

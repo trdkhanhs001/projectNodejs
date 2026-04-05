@@ -41,7 +41,7 @@ function UserHeader() {
             </>
           ) : (
             <Link to="/cart" className="nav-link">
-              Giỏp hàng
+              Giỏ hàng
               {getTotalItems() > 0 && (
                 <span className="cart-badge">{getTotalItems()}</span>
               )}

@@ -5,41 +5,28 @@ import { useAuth } from '../contexts/AuthContext'
 function StaffLogin() {
   const navigate = useNavigate()
   const { loginStaff } = useAuth()
-
-  const [form, setForm] = useState({
-    username: '',
-    password: ''
-  })
+  const [form, setForm] = useState({ username: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value })
-  }
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
-    if (!form.username.trim() || !form.password.trim()) {
+    if (!form.username.trim() || !form.password.trim())
       return setError('Vui lòng nhập tên đăng nhập và mật khẩu!')
-    }
 
     setLoading(true)
     const result = await loginStaff(form.username, form.password)
-
-    if (result.success) {
-      navigate('/staff')
-    } else {
-      setError(result.message)
-    }
-
+    if (result.success) navigate('/staff')
+    else setError(result.message)
     setLoading(false)
   }
 
   return (
-    <div className="grid md:grid-cols-2 min-h-screen">
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: '100vh' }}>
       <LeftPanel />
       <RightPanel
         form={form}
@@ -54,181 +41,274 @@ function StaffLogin() {
   )
 }
 
-/* ================= LEFT ================= */
+/* ─── LEFT PANEL ─── */
 function LeftPanel() {
-  return (
-    <div className="hidden md:flex flex-col justify-center items-center p-12 bg-gradient-to-br from-slate-950 to-red-950 relative overflow-hidden">
-      <div className="absolute top-0 right-0 w-96 h-96 bg-red-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-
-      <div className="relative z-10 max-w-sm space-y-6">
-        <div className="inline-block bg-red-500/20 text-red-300 px-3 py-1 rounded-full text-sm">
-          Nhân viên
-        </div>
-
-        <h1 className="text-4xl font-bold text-white leading-tight">
-          Hệ Thống <br />
-          <span className="text-red-400">POS Staff</span>
-        </h1>
-
-        <p className="text-gray-300">
-          Đăng nhập để truy cập POS, quản lý đơn và theo dõi ca làm việc.
-        </p>
-
-        <Steps />
-      </div>
-    </div>
-  )
-}
-
-function Steps() {
   const steps = [
-    'Đăng nhập tài khoản',
-    'Vào màn hình POS',
-    'Phục vụ khách hàng'
+    { label: '01', title: 'Đăng nhập tài khoản', desc: 'Xác thực nhân viên' },
+    { label: '02', title: 'Vào màn hình POS',    desc: 'Quản lý đơn hàng' },
+    { label: '03', title: 'Phục vụ khách hàng',  desc: 'Nhanh chóng & chính xác' },
   ]
 
   return (
-    <div className="space-y-4">
-      {steps.map((text, i) => (
-        <div key={i} className="flex gap-4">
-          <div className="w-10 h-10 flex items-center justify-center rounded-lg bg-red-500/30 text-red-300 font-bold">
-            {String(i + 1).padStart(2, '0')}
+    <div style={{
+      background: 'linear-gradient(160deg, #0f0e0b 0%, #1a0e0e 60%, #200e0e 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '3rem',
+      position: 'relative',
+      overflow: 'hidden',
+      borderRight: '1px solid rgba(239,68,68,0.12)',
+    }}>
+      {/* Glow blobs */}
+      <div style={{
+        position: 'absolute', top: '-80px', right: '-80px',
+        width: '400px', height: '400px',
+        background: 'radial-gradient(circle, rgba(239,68,68,0.07) 0%, transparent 70%)',
+        borderRadius: '50%',
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-100px', left: '-100px',
+        width: '500px', height: '500px',
+        background: 'radial-gradient(circle, rgba(239,68,68,0.04) 0%, transparent 70%)',
+        borderRadius: '50%',
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1, maxWidth: '360px', width: '100%' }}>
+        {/* Badge */}
+        <span style={{
+          display: 'inline-block',
+          padding: '0.2rem 0.75rem',
+          background: 'rgba(239,68,68,0.12)',
+          border: '1px solid rgba(239,68,68,0.25)',
+          borderRadius: '999px',
+          color: '#f87171',
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          marginBottom: '1.5rem',
+        }}>Nhân viên</span>
+
+        {/* Title */}
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '2.4rem',
+            fontWeight: 700,
+            color: 'var(--color-text)',
+            lineHeight: 1.15,
+            marginBottom: '0.5rem',
+          }}>
+            Hệ Thống <br />
+            <span style={{ color: '#f87171' }}>POS Staff</span>
           </div>
-          <div>
-            <p className="text-white font-medium">{text}</p>
-            <span className="text-sm text-gray-400">
-              {i === 0 && 'Xác thực tài khoản'}
-              {i === 1 && 'Quản lý đơn hàng'}
-              {i === 2 && 'Nhanh chóng & chính xác'}
-            </span>
-          </div>
+          <div style={{
+            width: '40px', height: '2px',
+            background: 'linear-gradient(90deg, #ef4444, transparent)',
+            marginBottom: '1rem',
+          }} />
+          <p style={{
+            color: 'var(--color-text-muted)',
+            fontSize: '0.875rem',
+            lineHeight: 1.6,
+          }}>
+            Đăng nhập để truy cập POS, quản lý đơn và theo dõi ca làm việc.
+          </p>
         </div>
-      ))}
+
+        {/* Steps */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {steps.map((step) => (
+            <div key={step.label} style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: '1rem',
+              padding: '0.875rem 1rem',
+              background: 'rgba(239,68,68,0.04)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid rgba(239,68,68,0.1)',
+            }}>
+              <div style={{
+                width: '36px', height: '36px',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(239,68,68,0.15)',
+                borderRadius: 'var(--radius-sm)',
+                color: '#f87171',
+                fontWeight: 700,
+                fontSize: '0.78rem',
+                flexShrink: 0,
+              }}>{step.label}</div>
+              <div>
+                <div style={{ color: 'var(--color-text)', fontWeight: 600, fontSize: '0.875rem', marginBottom: '0.15rem' }}>
+                  {step.title}
+                </div>
+                <div style={{ color: 'var(--color-text-muted)', fontSize: '0.78rem' }}>
+                  {step.desc}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
-/* ================= RIGHT ================= */
-function RightPanel({
-  form,
-  loading,
-  error,
-  showPassword,
-  setShowPassword,
-  handleChange,
-  handleSubmit
-}) {
+/* ─── RIGHT PANEL ─── */
+function RightPanel({ form, loading, error, showPassword, setShowPassword, handleChange, handleSubmit }) {
   return (
-    <div className="flex items-center justify-center p-6 bg-white">
-      <div className="w-full max-w-md space-y-6">
-        <Header />
+    <div style={{
+      background: 'var(--color-bg)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '3rem',
+    }}>
+      <div style={{ width: '100%', maxWidth: '400px' }} className="animate-slide-up">
 
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
-            <div className="bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm">
-              ⚠ {error}
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <div style={{ fontSize: '2.5rem', lineHeight: 1, marginBottom: '1rem' }}>⚡</div>
+          <h2 style={{
+            fontFamily: 'var(--font-display)',
+            fontSize: '2rem',
+            fontWeight: 700,
+            color: 'var(--color-text)',
+            marginBottom: '0.4rem',
+          }}>Đăng nhập Staff</h2>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+            Nhập thông tin nhân viên để tiếp tục
+          </p>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="alert alert-error" style={{ marginBottom: '1.25rem' }}>
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          {/* Username */}
+          <div className="form-group">
+            <label htmlFor="s-username">Tên đăng nhập</label>
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                position: 'absolute', left: '0.875rem', top: '50%',
+                transform: 'translateY(-50%)', fontSize: '0.9rem',
+                color: 'var(--color-text-dim)',
+              }}>👤</span>
+              <input
+                id="s-username"
+                name="username"
+                type="text"
+                value={form.username}
+                onChange={handleChange}
+                placeholder="Nhập tên đăng nhập"
+                disabled={loading}
+                autoFocus
+                style={{ paddingLeft: '2.5rem' }}
+              />
             </div>
-          )}
+          </div>
 
-          <Input
-            label="Tên đăng nhập"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-            icon="👤"
-            disabled={loading}
-          />
+          {/* Password */}
+          <div className="form-group">
+            <label htmlFor="s-password">Mật khẩu</label>
+            <div style={{ position: 'relative' }}>
+              <span style={{
+                position: 'absolute', left: '0.875rem', top: '50%',
+                transform: 'translateY(-50%)', fontSize: '0.9rem',
+                color: 'var(--color-text-dim)',
+              }}>🔒</span>
+              <input
+                id="s-password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                value={form.password}
+                onChange={handleChange}
+                placeholder="Nhập mật khẩu"
+                disabled={loading}
+                style={{ paddingLeft: '2.5rem', paddingRight: '3rem' }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+                style={{
+                  position: 'absolute', right: '0.875rem', top: '50%',
+                  transform: 'translateY(-50%)', background: 'none',
+                  border: 'none', cursor: 'pointer',
+                  color: 'var(--color-text-muted)', fontSize: '1rem', padding: 0,
+                }}
+              >
+                {showPassword ? '🙈' : '👁️'}
+              </button>
+            </div>
+          </div>
 
-          <PasswordInput
-            value={form.password}
-            onChange={handleChange}
-            show={showPassword}
-            setShow={setShowPassword}
-            disabled={loading}
-          />
-
+          {/* Submit — red accent for staff */}
           <button
+            type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-lg text-white font-semibold bg-gradient-to-r from-red-500 to-red-600 hover:opacity-90 disabled:bg-gray-400 flex justify-center items-center gap-2"
+            style={{
+              width: '100%',
+              padding: '0.875rem 2rem',
+              marginTop: '0.5rem',
+              background: loading
+                ? 'rgba(239,68,68,0.3)'
+                : 'linear-gradient(135deg, #ef4444, #b91c1c)',
+              color: '#fff',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.5rem',
+              transition: 'var(--transition)',
+              boxShadow: '0 2px 16px rgba(239,68,68,0.25)',
+            }}
           >
             {loading ? (
               <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="spinner" style={{
+                  width: '16px', height: '16px',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  display: 'inline-block',
+                }} />
                 Đang đăng nhập...
               </>
-            ) : (
-              'Đăng nhập →'
-            )}
+            ) : 'Đăng nhập →'}
           </button>
         </form>
 
-        <Footer />
+        {/* Footer */}
+        <div style={{
+          marginTop: '1.75rem',
+          paddingTop: '1.5rem',
+          borderTop: '1px solid var(--color-border)',
+          textAlign: 'center',
+          fontSize: '0.85rem',
+          color: 'var(--color-text-muted)',
+        }}>
+          Admin?{' '}
+          <a href="/admin-login" style={{
+            color: '#f87171',
+            textDecoration: 'none',
+            fontWeight: 500,
+          }}>
+            Đăng nhập tại đây
+          </a>
+        </div>
       </div>
-    </div>
-  )
-}
-
-/* ================= SMALL COMPONENTS ================= */
-
-function Header() {
-  return (
-    <div className="text-center space-y-2">
-      <div className="text-4xl">⚡</div>
-      <h2 className="text-2xl font-bold">Đăng nhập Staff</h2>
-      <p className="text-gray-500 text-sm">Nhập thông tin nhân viên</p>
-    </div>
-  )
-}
-
-function Input({ label, icon, ...props }) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <div className="flex items-center mt-1 border rounded-lg focus-within:ring-2 focus-within:ring-red-500">
-        <span className="px-3">{icon}</span>
-        <input
-          {...props}
-          className="flex-1 py-2 outline-none"
-        />
-      </div>
-    </div>
-  )
-}
-
-function PasswordInput({ value, onChange, show, setShow, disabled }) {
-  return (
-    <div>
-      <label className="text-sm font-medium text-gray-700">Mật khẩu</label>
-      <div className="flex items-center mt-1 border rounded-lg focus-within:ring-2 focus-within:ring-red-500">
-        <span className="px-3">🔒</span>
-        <input
-          name="password"
-          type={show ? 'text' : 'password'}
-          value={value}
-          onChange={onChange}
-          disabled={disabled}
-          className="flex-1 py-2 outline-none"
-        />
-        <button
-          type="button"
-          onClick={() => setShow(!show)}
-          className="px-3 text-gray-500"
-        >
-          {show ? '🙈' : '👁️'}
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function Footer() {
-  return (
-    <div className="text-center text-sm text-gray-500 pt-4 border-t">
-      Admin?{' '}
-      <a href="/admin-login" className="text-red-600 font-medium">
-        Đăng nhập tại đây
-      </a>
     </div>
   )
 }
