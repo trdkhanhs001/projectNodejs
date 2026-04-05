@@ -32,6 +32,7 @@ exports.createReview = async (userId, { menuId, rating, comment, order }) => {
     menu: menuId,
     order: order,
     rating,
+    order,
     comment
   });
 
