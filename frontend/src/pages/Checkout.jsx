@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UserHeader from '../components/UserHeader'
+import DiscountInput from '../components/DiscountInput'
 import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import apiClient from '../utils/apiClient'
+import { getActiveDiscounts } from '../utils/discountApi'
+import { createPayment } from '../utils/paymentApi'
 import showToast from '../utils/toast'
 
 function Checkout() {
@@ -12,8 +15,7 @@ function Checkout() {
   const { user, isAuthenticated } = useAuth()
 
   const [loading, setLoading] = useState(false)
-  const [availableDiscounts, setAvailableDiscounts] = useState([])
-  const [selectedDiscount, setSelectedDiscount] = useState(null)
+  const [appliedDiscount, setAppliedDiscount] = useState(null)
 
   const [orderData, setOrderData] = useState({
     name: '',
@@ -36,43 +38,23 @@ function Checkout() {
     }
   }, [isAuthenticated, user])
 
-  // Load discount
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchDiscounts()
-    }
-  }, [isAuthenticated])
-
-  const fetchDiscounts = async () => {
-    try {
-      const res = await apiClient.get('/discount-codes')
-      setAvailableDiscounts(res.data)
-    } catch (err) {
-      console.error(err)
-    }
-  }
-
   const handleChange = (e) => {
     const { name, value } = e.target
     setOrderData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleDiscountApplied = (discount) => {
+    setAppliedDiscount(discount)
+  }
+
+  const handleDiscountRemoved = () => {
+    setAppliedDiscount(null)
+  }
+
   // ================= CALC =================
   const subtotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0)
   const tax = subtotal * 0.1
-
-  const getDiscountValue = () => {
-    if (!selectedDiscount) return 0
-    const code = availableDiscounts.find(d => d._id === selectedDiscount)
-    if (!code) return 0
-
-    if (code.discountType === 'PERCENT') {
-      return subtotal * (code.discountValue / 100)
-    }
-    return code.discountValue
-  }
-
-  const discount = getDiscountValue()
+  const discount = appliedDiscount?.amount || 0
   const total = subtotal + tax - discount
 
   // ================= SUBMIT =================
@@ -115,40 +97,64 @@ function Checkout() {
 
       if (!isAuthenticated) {
         // Online guest order - requires full info
-        const res = await apiClient.post('/order/guest', {
+        const res = await apiClient.post('/order', {
           orderType: 'ONLINE',
           items: cartItems.map(i => ({
             menuId: i._id,
             quantity: i.quantity
           })),
-          guestInfo: {
-            name: orderData.name,
-            email: orderData.email,
-            phone: orderData.phone,
-            address: orderData.address
-          },
+          guestName: orderData.name,
+          guestEmail: orderData.email,
+          guestPhone: orderData.phone,
+          guestAddress: orderData.address,
+          deliveryAddress: orderData.address,
           notes: orderData.notes,
-          paymentMethod: orderData.paymentMethod
+          paymentMethod: orderData.paymentMethod,
+          discountCode: appliedDiscount?.code || null
         })
 
-        showToast(`Được! Thành công tạo đơn #${res.data.order.orderNumber}`, 'success')
+        const orderId = res.data._id
+        
+        // Create payment for guest order
+        if (res.data.paymentMethod !== 'CASH') {
+          await createPayment(orderId, total, orderData.paymentMethod)
+        }
+
+        showToast(`✅ Đơn hàng #${res.data.orderNumber} được tạo thành công!`, 'success')
       } else {
         // Authenticated user order
         const res = await apiClient.post('/order', {
+          orderType: 'ONLINE',
+          items: cartItems.map(i => ({
+            menuId: i._id,
+            quantity: i.quantity
+          })),
           deliveryAddress: orderData.address,
           notes: orderData.notes,
-          paymentMethod: orderData.paymentMethod
+          paymentMethod: orderData.paymentMethod,
+          discountCode: appliedDiscount?.code || null,
+          discountAmount: discount,
+          subtotal,
+          tax,
+          total
         })
 
         const orderId = res.data._id
 
-        if (selectedDiscount) {
-          await apiClient.post(`/order/${orderId}/apply-discount`, {
-            discountCodeId: selectedDiscount
-          })
+        // Apply discount if exists
+        if (appliedDiscount?.code) {
+          // The discount is already applied via API
         }
 
-        showToast(`Được! Thành công tạo đơn #${res.data.orderNumber}`, 'success')
+        // Create payment
+        if (orderData.paymentMethod !== 'CASH') {
+          const paymentRes = await createPayment(orderId, total, orderData.paymentMethod)
+          if (!paymentRes.success) {
+            showToast('⚠️ Lệnh thanh toán thất bại, nhưng đơn hàng đã được tạo', 'warning')
+          }
+        }
+
+        showToast(`✅ Đơn hàng #${res.data.orderNumber} được tạo thành công!`, 'success')
       }
 
       clearCart()
@@ -280,27 +286,13 @@ function Checkout() {
                     </select>
                   </div>
 
-                  {/* Discount */}
-                  {isAuthenticated && availableDiscounts.length > 0 && (
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-900 mb-2">
-                        🎟️ Mã Khuyến Mãi
-                      </label>
-                      <select
-                        value={selectedDiscount || ''}
-                        onChange={(e) => setSelectedDiscount(e.target.value || null)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      >
-                        <option value="">-- Không dùng mã --</option>
-                        {availableDiscounts.map(d => (
-                          <option key={d._id} value={d._id}>
-                            {d.code} ({d.discountType === 'PERCENT'
-                              ? d.discountValue + '%'
-                              : d.discountValue + 'đ'})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* Discount Input */}
+                  {isAuthenticated && (
+                    <DiscountInput 
+                      orderAmount={subtotal}
+                      onDiscountApplied={handleDiscountApplied}
+                      onDiscountRemoved={handleDiscountRemoved}
+                    />
                   )}
                 </div>
               </div>
