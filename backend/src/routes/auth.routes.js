@@ -54,14 +54,18 @@ router.post('/staff/login', loginLimiter, async function (req, res, next) {
 
 router.post('/user/login', loginLimiter, async function (req, res, next) {
   try {
-    // Direct login is deprecated - use OTP flow instead
-    return res.status(403).json({ 
-      message: 'Direct login is disabled for security. Please use OTP verification.',
-      steps: [
-        '1. POST /auth/user/request-login-otp with username and password',
-        '2. POST /auth/user/verify-login-otp with userId and otp'
-      ]
-    });
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password required' });
+    }
+
+    if (username.length > 50 || password.length > 100) {
+      return res.status(400).json({ message: 'Invalid username or password format' });
+    }
+
+    const result = await authController.login(username, password);
+    res.status(200).json(result);
   } catch (err) {
     res.status(401).json({ message: err.message });
   }

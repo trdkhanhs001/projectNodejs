@@ -142,6 +142,8 @@ function LoginFormInModal({ authOnly = false, onSwitchToRegister, onBack, onSucc
 
       // Save token
       localStorage.setItem('auth_token', response.data.accessToken)
+      localStorage.setItem('refresh_token', response.data.refreshToken)
+      
       // Call success callback to update UI
       onSuccess()
     } catch (err) {

@@ -12,6 +12,7 @@
     "seed:menu": "node scripts/seedMenu.js",
     "seed:tables": "node scripts/seedTables.js",
     "update:images": "node scripts/updateMenuImages.js",
+    
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

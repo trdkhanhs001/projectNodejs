@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import AdminLayout from '../components/Admin/AdminLayout'
-import { useAuth } from '../contexts/AuthContext'
-import apiClient from '../utils/apiClient'
-import showToast from '../utils/toast'
+import AdminLayout from '../../components/Admin/AdminLayout'
+import { useAuth } from '../../contexts/AuthContext'
+import apiClient from '../../utils/apiClient'
+import showToast from '../../utils/toast'
 
 export default function AdminDiscounts() {
   const { user, isAuthenticated } = useAuth()
@@ -33,8 +33,8 @@ export default function AdminDiscounts() {
   const fetchDiscounts = async () => {
     try {
       setLoading(true)
-      const res = await apiClient.get('/discount', { params: { page, limit: 10 } })
-      setDiscounts(res.data?.data || [])
+      const res = await apiClient.get('/discount/', { params: { page, limit: 10 } })
+      setDiscounts(res.data?.data || res.data || [])
       setPagination(res.data?.pagination)
     } catch (err) {
       showToast('Không thể tải danh sách khuyến mãi', 'error')
@@ -58,7 +58,7 @@ export default function AdminDiscounts() {
 
     try {
       setLoading(true)
-      await apiClient.post('/discount', {
+      await apiClient.post('/discount/', {
         ...formData,
         value: parseFloat(formData.value),
         minOrderAmount: parseFloat(formData.minOrderAmount),

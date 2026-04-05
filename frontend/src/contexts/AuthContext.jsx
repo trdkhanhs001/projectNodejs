@@ -96,7 +96,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Hàm login User (deprecated - use OTP flow instead)
+  // Hàm login User (direct login sau khi đăng ký)
   const loginUser = async (username, password) => {
     try {
       const response = await apiClient.post('/auth/user/login', {
@@ -109,12 +109,12 @@ export function AuthProvider({ children }) {
 
       return { success: true, message: 'Đăng nhập thành công!', role: userData.role }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'User login via OTP flow is required'
+      const errorMsg = err.response?.data?.message || 'Lỗi đăng nhập'
       return { success: false, message: errorMsg }
     }
   }
 
-  // Hàm login (giữ lại cho backwards compatibility - Admin/Staff)
+  // Hàm login (generic - dùng cho admin/staff)
   const login = async (username, password) => {
     try {
       const response = await apiClient.post('/auth/login', {

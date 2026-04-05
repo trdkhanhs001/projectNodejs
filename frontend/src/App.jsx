@@ -28,7 +28,6 @@ import AdminCategory from './pages/Admin/AdminCategory'
 import AdminMenu from './pages/Admin/AdminMenu'
 import AdminOrders from './pages/Admin/AdminOrders'
 import AdminProfile from './pages/Admin/AdminProfile'
-import AdminDiscountCode from './pages/Admin/AdminDiscountCode'
 import AdminDiscounts from './pages/Admin/AdminDiscounts'
 
 function App() {
@@ -61,7 +60,6 @@ function App() {
             <Route path="/admin/menu" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminMenu /></RoleBasedRoute></ErrorBoundary>} />
             <Route path="/admin/orders" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminOrders /></RoleBasedRoute></ErrorBoundary>} />
             <Route path="/admin/profile" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminProfile /></RoleBasedRoute></ErrorBoundary>} />
-            <Route path="/admin/discount-codes" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminDiscountCode /></RoleBasedRoute></ErrorBoundary>} />
             <Route path="/admin/discounts" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminDiscounts /></RoleBasedRoute></ErrorBoundary>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
