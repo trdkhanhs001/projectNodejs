@@ -271,7 +271,7 @@ function UserHeader() {
               <>
                 <div className="uh-avatar">👤</div>
                 <span className="uh-username">
-                  {user.name || user.email}
+                  {user.username || user.email}
                 </span>
                 <div className="uh-dot" />
                 <button className="uh-btn-logout" onClick={handleLogout}>
