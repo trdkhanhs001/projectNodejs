@@ -1,12 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
 const Category = require('../src/models/category.model');
 const Menu = require('../src/models/menu.model');
 const Admin = require('../src/models/admin.model');
-const cloudinary = require('../src/config/cloudinary');
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -20,46 +16,6 @@ const categories = [
   { name: 'Rau & Chay', description: 'Món chay, rau luộc', displayOrder: 7 },
   { name: 'Đồ Uống', description: 'Nước, nước ngọt', displayOrder: 8 },
 ];
-
-async function uploadImageToCloudinary(imagePath, menuName) {
-  try {
-    console.log(`   📥 Downloading image from: ${imagePath}`);
-    
-    const response = await axios.get(imagePath, {
-      responseType: 'arraybuffer',
-      timeout: 10000
-    });
-
-    console.log(`   ☁️  Uploading to Cloudinary...`);
-    
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder: 'restaurant/menus',
-          resource_type: 'auto',
-          public_id: `menu_${menuName.toLowerCase().replace(/\s+/g, '_')}`,
-          format: 'jpg',
-          quality: 'auto',
-          overwrite: true
-        },
-        (error, result) => {
-          if (error) {
-            console.error(`❌ Upload failed: ${error.message}`);
-            reject(error);
-          } else {
-            console.log(`✅ Uploaded: ${menuName}`);
-            resolve(result.secure_url);
-          }
-        }
-      );
-      
-      uploadStream.end(response.data);
-    });
-  } catch (error) {
-    console.error(`❌ Error: ${error.message}`);
-    return null;
-  }
-}
 
 const menus = [
   {
@@ -364,19 +320,13 @@ async function seed() {
     }
     console.log('\n');
 
-    console.log('📝 Seeding Menu Items with Images...\n');
+    console.log('📝 Seeding Menu Items...\n');
     
     for (const menuData of menus) {
       const existing = await Menu.findOne({ name: menuData.name });
       if (existing) {
         console.log(`⚠️  Menu exists: ${menuData.name}`);
       } else {
-        let menuImage = null;
-        
-        if (menuData.imageUrl) {
-          menuImage = await uploadImageToCloudinary(menuData.imageUrl, menuData.name);
-        }
-        
         const newMenu = new Menu({
           name: menuData.name,
           description: menuData.description,
@@ -386,17 +336,17 @@ async function seed() {
           isVegan: menuData.isVegan,
           isSpicy: menuData.isSpicy,
           preparationTime: menuData.preparationTime,
-          image: menuImage,
+          image: null, // Images will be uploaded separately using updateMenuImages.js
           isActive: true,
           createdBy: adminId
         });
         await newMenu.save();
-        console.log(`✅ Created menu: ${menuData.name}\n`);
+        console.log(`✅ Created menu: ${menuData.name}`);
       }
     }
     console.log('\n');
 
-    console.log('═'.repeat(50));
+    console.log('\n═'.repeat(50));
     console.log('✅ Seeding completed successfully!\n');
 
     const catCount = await Category.countDocuments();
@@ -405,6 +355,9 @@ async function seed() {
     console.log(`   Categories: ${catCount}`);
     console.log(`   Menu Items: ${menuCount}`);
     console.log('═'.repeat(50) + '\n');
+    console.log('⚠️  Note: Images are not uploaded in this script.');
+    console.log('📝 To upload images to Cloudinary, run:');
+    console.log('   npm run update:images\n');
 
     await mongoose.connection.close();
     console.log('🔌 Disconnected from MongoDB\n');

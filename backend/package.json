@@ -10,6 +10,7 @@
     "seed:admin": "node scripts/seedAdmin.js",
     "seed:staff": "node scripts/seedStaff.js",
     "seed:menu": "node scripts/seedMenu.js",
+    "seed:discount": "node scripts/seedDiscount.js",
     "seed:tables": "node scripts/seedTables.js",
     "update:images": "node scripts/updateMenuImages.js",
     
