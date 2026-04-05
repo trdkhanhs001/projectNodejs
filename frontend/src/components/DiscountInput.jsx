@@ -9,40 +9,26 @@ export default function DiscountInput({ orderAmount, onDiscountApplied, onDiscou
 
   const handleValidateDiscount = async (e) => {
     e.preventDefault()
-    
     if (!discountCode.trim()) {
       showToast('Vui lòng nhập mã khuyến mãi', 'warning')
       return
     }
-
     try {
       setLoading(true)
       const result = await validateDiscount(discountCode.toUpperCase(), orderAmount)
-      
-      if (!result.success) {
-        showToast(result.message, 'error')
-        return
-      }
+      if (!result.success) { showToast(result.message, 'error'); return }
 
       const data = result.data?.data || result.data
-      setAppliedDiscount({
+      const applied = {
         code: data.code,
         type: data.type,
         value: data.value,
         discountAmount: data.discountAmount,
-        description: data.description
-      })
-
-      showToast(`✅ Áp dụng mã ${data.code} thành công!`, 'success')
-      
-      if (onDiscountApplied) {
-        onDiscountApplied({
-          code: data.code,
-          amount: data.discountAmount,
-          type: data.type,
-          value: data.value
-        })
+        description: data.description,
       }
+      setAppliedDiscount(applied)
+      showToast(`✅ Áp dụng mã ${data.code} thành công!`, 'success')
+      onDiscountApplied?.({ code: data.code, amount: data.discountAmount, type: data.type, value: data.value })
     } catch (err) {
       showToast(err.message || 'Không thể kiểm tra mã khuyến mãi', 'error')
     } finally {
@@ -53,55 +39,119 @@ export default function DiscountInput({ orderAmount, onDiscountApplied, onDiscou
   const handleRemoveDiscount = () => {
     setAppliedDiscount(null)
     setDiscountCode('')
-    if (onDiscountRemoved) {
-      onDiscountRemoved()
-    }
+    onDiscountRemoved?.()
     showToast('Đã xóa mã khuyến mãi', 'info')
   }
 
   return (
-    <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+    <div style={{
+      background: 'var(--color-surface-2)',
+      border: '1px solid var(--color-border)',
+      borderRadius: 'var(--radius-md)',
+      padding: '1rem 1.125rem',
+      transition: 'var(--transition)',
+    }}>
+      {/* Label */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.4rem',
+        marginBottom: '0.75rem',
+      }}>
+        <span style={{ fontSize: '0.9rem' }}>🎁</span>
+        <span style={{
+          fontSize: '0.78rem',
+          fontWeight: 600,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: 'var(--color-text-muted)',
+        }}>
+          Mã khuyến mãi
+        </span>
+      </div>
+
       {!appliedDiscount ? (
-        <form onSubmit={handleValidateDiscount} className="space-y-3">
-          <label className="block text-sm font-semibold text-gray-900">
-            🎟️ Có mã khuyến mãi? Nhập ở đây
-          </label>
-          
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={discountCode}
-              onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-              placeholder="Nhập mã khuyến mãi (VD: WELCOME20)"
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-600 disabled:opacity-50"
-            >
-              {loading ? '⏳' : 'Áp Dụng'}
-            </button>
-          </div>
+        <form onSubmit={handleValidateDiscount} style={{ display: 'flex', gap: '0.5rem' }}>
+          <input
+            type="text"
+            value={discountCode}
+            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+            placeholder="VD: WELCOME20"
+            disabled={loading}
+            style={{
+              flex: 1,
+              padding: '0.6rem 0.875rem',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--color-text)',
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.875rem',
+              letterSpacing: '0.04em',
+              fontWeight: 500,
+              outline: 'none',
+              transition: 'var(--transition)',
+            }}
+            onFocus={e => {
+              e.target.style.borderColor = 'var(--color-border-focus)'
+              e.target.style.boxShadow = '0 0 0 3px rgba(212,175,100,0.1)'
+            }}
+            onBlur={e => {
+              e.target.style.borderColor = 'var(--color-border)'
+              e.target.style.boxShadow = 'none'
+            }}
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn btn-outline btn-sm"
+            style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
+          >
+            {loading
+              ? <span className="spinner" style={{ fontSize: '0.85rem' }}>⏳</span>
+              : 'Áp dụng'}
+          </button>
         </form>
       ) : (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-green-700">✅ {appliedDiscount.code}</p>
-              <p className="text-sm text-gray-600">{appliedDiscount.description}</p>
-              <p className="text-sm font-semibold text-green-600">
-                Giảm: {appliedDiscount.discountAmount.toLocaleString()}đ
-              </p>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.75rem',
+          padding: '0.75rem 1rem',
+          background: 'rgba(74, 222, 128, 0.06)',
+          border: '1px solid rgba(74, 222, 128, 0.2)',
+          borderRadius: 'var(--radius-sm)',
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <span style={{ fontSize: '0.8rem' }}>✅</span>
+              <span style={{
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                color: 'var(--color-success)',
+                letterSpacing: '0.04em',
+              }}>
+                {appliedDiscount.code}
+              </span>
             </div>
-            <button
-              onClick={handleRemoveDiscount}
-              className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-            >
-              Xóa
-            </button>
+            {appliedDiscount.description && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
+                {appliedDiscount.description}
+              </span>
+            )}
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-success)' }}>
+              Giảm {appliedDiscount.discountAmount?.toLocaleString()} đ
+            </span>
           </div>
+
+          <button
+            onClick={handleRemoveDiscount}
+            className="btn btn-danger btn-sm"
+            style={{ flexShrink: 0 }}
+          >
+            Xóa
+          </button>
         </div>
       )}
     </div>

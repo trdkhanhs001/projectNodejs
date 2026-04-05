@@ -2,14 +2,77 @@ import { useState, useEffect } from 'react'
 import UserHeader from '../components/UserHeader'
 import apiClient from '../utils/apiClient'
 
+/* ─── Status config ─── */
+const STATUS_CONFIG = {
+  PENDING:   { label: 'Chờ xác nhận', bg: 'rgba(251,191,36,0.12)',  color: '#fbbf24', border: 'rgba(251,191,36,0.25)' },
+  CONFIRMED: { label: 'Đã xác nhận',  bg: 'rgba(96,165,250,0.12)',  color: '#60a5fa', border: 'rgba(96,165,250,0.25)' },
+  PREPARING: { label: 'Đang chuẩn bị',bg: 'rgba(167,139,250,0.12)', color: '#a78bfa', border: 'rgba(167,139,250,0.25)' },
+  COMPLETED: { label: 'Hoàn thành',   bg: 'rgba(74,222,128,0.12)',  color: '#4ade80', border: 'rgba(74,222,128,0.25)' },
+  CANCELLED: { label: 'Đã hủy',       bg: 'rgba(248,113,113,0.12)', color: '#f87171', border: 'rgba(248,113,113,0.25)' },
+}
+
+const PROGRESS_STEPS = [
+  { label: 'Chờ xác nhận', statuses: ['PENDING','CONFIRMED','PREPARING','COMPLETED'] },
+  { label: 'Xác nhận',     statuses: ['CONFIRMED','PREPARING','COMPLETED'] },
+  { label: 'Chuẩn bị',    statuses: ['PREPARING','COMPLETED'] },
+  { label: 'Hoàn thành',  statuses: ['COMPLETED'] },
+]
+
+const formatDate = (d) => new Date(d).toLocaleString('vi-VN')
+
+/* ─── Shared styles ─── */
+const S = {
+  page: {
+    minHeight: '100vh',
+    background: 'var(--color-bg)',
+    backgroundImage: `radial-gradient(ellipse 80% 50% at 50% -10%, rgba(212,175,100,0.06) 0%, transparent 60%)`,
+  },
+  container: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    padding: '2rem 1.5rem 4rem',
+  },
+  pageTitle: {
+    fontFamily: 'var(--font-display)',
+    fontSize: '2.2rem',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    marginBottom: '2rem',
+  },
+  card: {
+    background: 'var(--color-surface)',
+    border: '1px solid var(--color-border)',
+    borderRadius: 'var(--radius-lg)',
+    boxShadow: 'var(--shadow-card)',
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  topLine: {
+    position: 'absolute', top: 0, left: '10%', right: '10%',
+    height: '1px',
+    background: 'linear-gradient(90deg, transparent, var(--color-gold), transparent)',
+    opacity: 0.5,
+  },
+  sectionTitle: {
+    fontFamily: 'var(--font-display)',
+    fontSize: '1rem',
+    fontWeight: 600,
+    color: 'var(--color-text)',
+    marginBottom: '1rem',
+    paddingBottom: '0.75rem',
+    borderBottom: '1px solid var(--color-border)',
+  },
+}
+
+/* ════════════════════════════════════
+   MAIN COMPONENT
+════════════════════════════════════ */
 function Orders() {
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedOrder, setSelectedOrder] = useState(null)
 
-  useEffect(() => {
-    fetchOrders()
-  }, [])
+  useEffect(() => { fetchOrders() }, [])
 
   const fetchOrders = async () => {
     try {
@@ -23,229 +86,313 @@ function Orders() {
     }
   }
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      PENDING: { label: 'Chờ xác nhận', color: 'badge-pending' },
-      CONFIRMED: { label: 'Đã xác nhận', color: 'badge-confirmed' },
-      PREPARING: { label: 'Đang chuẩn bị', color: 'badge-preparing' },
-      COMPLETED: { label: 'Hoàn thành', color: 'badge-completed' },
-      CANCELLED: { label: 'Đã hủy', color: 'badge-cancelled' }
-    }
-    const config = statusConfig[status] || { label: status, color: 'badge-default' }
-    return config
-  }
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleString('vi-VN')
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={S.page}>
       <UserHeader />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900">📦 Lịch Sử Đơn Hàng</h1>
-        </div>
+      <div style={S.container}>
+        <h1 style={S.pageTitle}>📦 Lịch Sử Đơn Hàng</h1>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="text-gray-600 text-lg">⏳ Đang tải...</div>
+        {/* Loading */}
+        {loading && (
+          <div style={{
+            ...S.card, textAlign: 'center',
+            padding: '4rem', color: 'var(--color-gold)',
+            fontSize: '1rem', fontWeight: 600,
+          }}>
+            <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>⏳</div>
+            Đang tải đơn hàng...
           </div>
-        ) : orders.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <div className="text-6xl mb-4">📭</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Chưa có đơn hàng</h2>
-            <p className="text-gray-600">Bạn chưa đặt đơn hàng nào cả</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Orders List */}
-            <div className="lg:col-span-1">
-              <div className="space-y-3">
-                {orders.map(order => {
-                  const statusConfig = {
-                    PENDING: { label: 'Chờ xác nhận', color: 'bg-yellow-100 text-yellow-700' },
-                    CONFIRMED: { label: 'Đã xác nhận', color: 'bg-blue-100 text-blue-700' },
-                    PREPARING: { label: 'Đang chuẩn bị', color: 'bg-purple-100 text-purple-700' },
-                    COMPLETED: { label: 'Hoàn thành', color: 'bg-green-100 text-green-700' },
-                    CANCELLED: { label: 'Đã hủy', color: 'bg-red-100 text-red-700' }
-                  }
-                  const config = statusConfig[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-700' }
+        )}
 
-                  return (
-                    <div
-                      key={order._id}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedOrder?._id === order._id
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-200 bg-white hover:border-gray-300'
-                      }`}
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-bold text-gray-900">Đơn #{order._id.substring(0, 8)}</h3>
-                          <p className="text-xs text-gray-600">
-                            {formatDate(order.createdAt)}
-                          </p>
+        {/* Empty */}
+        {!loading && orders.length === 0 && (
+          <div style={{ ...S.card, textAlign: 'center', padding: '5rem 2rem' }}>
+            <div style={S.topLine} />
+            <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.35 }}>📭</div>
+            <h2 style={{
+              fontFamily: 'var(--font-display)', fontSize: '1.5rem',
+              fontWeight: 700, color: 'var(--color-text)', marginBottom: '0.5rem',
+            }}>Chưa có đơn hàng</h2>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+              Bạn chưa đặt đơn hàng nào cả
+            </p>
+          </div>
+        )}
+
+        {/* Content */}
+        {!loading && orders.length > 0 && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: selectedOrder ? '360px 1fr' : '1fr',
+            gap: '1.5rem',
+            alignItems: 'start',
+          }}>
+
+            {/* ── LEFT: Order List ── */}
+            <div style={{
+              ...S.card,
+              position: 'sticky', top: '6rem',
+              maxHeight: 'calc(100vh - 8rem)',
+              overflowY: 'auto',
+            }}>
+              <div style={S.topLine} />
+              {/* Scrollbar is handled by global CSS */}
+              {orders.map((order, idx) => {
+                const cfg = STATUS_CONFIG[order.status] || { label: order.status, bg: 'rgba(154,145,128,0.1)', color: 'var(--color-text-muted)', border: 'var(--color-border)' }
+                const isActive = selectedOrder?._id === order._id
+
+                return (
+                  <div
+                    key={order._id}
+                    onClick={() => setSelectedOrder(isActive ? null : order)}
+                    style={{
+                      padding: '1rem 1.25rem',
+                      borderBottom: idx < orders.length - 1 ? '1px solid rgba(212,175,100,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'background 0.15s',
+                      background: isActive ? 'rgba(212,175,100,0.08)' : 'transparent',
+                      borderLeft: isActive ? '2px solid var(--color-gold)' : '2px solid transparent',
+                    }}
+                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(212,175,100,0.04)' }}
+                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '0.9rem' }}>
+                          Đơn #{order._id.substring(0, 8).toUpperCase()}
                         </div>
-                        <span className={`text-xs font-semibold px-2 py-1 rounded ${config.color}`}>
-                          {config.label}
-                        </span>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', marginTop: '0.15rem' }}>
+                          {formatDate(order.createdAt)}
+                        </div>
                       </div>
-
-                      <p className="text-sm text-gray-700 mb-1">
-                        👤 {order.user?.fullName || order.user?.username || 'User'}
-                      </p>
-                      <p className="text-sm font-semibold text-purple-600">
-                        {order.items?.length || 0} món | {(order.total || 0).toLocaleString()} đ
-                      </p>
+                      <span style={{
+                        fontSize: '0.7rem', fontWeight: 700,
+                        padding: '0.2rem 0.6rem', borderRadius: '999px',
+                        background: cfg.bg, color: cfg.color,
+                        border: `1px solid ${cfg.border}`,
+                        whiteSpace: 'nowrap', letterSpacing: '0.04em',
+                      }}>
+                        {cfg.label}
+                      </span>
                     </div>
-                  )
-                })}
-              </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
+                      👤 {order.user?.fullName || order.user?.username || 'User'}
+                    </div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--color-gold)', fontWeight: 600, marginTop: '0.2rem' }}>
+                      {order.items?.length || 0} món &nbsp;·&nbsp; {(order.total || 0).toLocaleString()} đ
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
-            {/* Order Details */}
+            {/* ── RIGHT: Order Detail ── */}
             {selectedOrder && (
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h2 className="text-2xl font-bold text-gray-900">Chi Tiết Đơn Hàng</h2>
+              <div style={S.card} className="animate-slide-up">
+                <div style={S.topLine} />
+                <div style={{ padding: '1.75rem' }}>
+
+                  {/* Detail Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2 style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: '1.5rem', fontWeight: 700,
+                      color: 'var(--color-text)', margin: 0,
+                    }}>Chi Tiết Đơn Hàng</h2>
                     <button
-                      className="text-2xl text-gray-400 hover:text-gray-600 transition"
                       onClick={() => setSelectedOrder(null)}
-                    >
-                      ✕
-                    </button>
+                      style={{
+                        background: 'var(--color-surface-2)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        color: 'var(--color-text-muted)',
+                        width: '32px', height: '32px',
+                        cursor: 'pointer', fontSize: '1rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}
+                    >✕</button>
                   </div>
 
-                  {/* Status Progress */}
-                  <div className="bg-gray-50 p-6 rounded-lg">
-                    <div className="flex items-center justify-between mb-4">
+                  {/* ── Progress Bar ── */}
+                  {selectedOrder.status !== 'CANCELLED' && (
+                    <div style={{
+                      background: 'var(--color-surface-2)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '1.25rem 1.5rem',
+                      marginBottom: '1.5rem',
+                      border: '1px solid var(--color-border)',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                        {PROGRESS_STEPS.map((step, idx) => {
+                          const done = step.statuses.includes(selectedOrder.status)
+                          return (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', flex: 1 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: '0 0 auto' }}>
+                                <div style={{
+                                  width: '36px', height: '36px',
+                                  borderRadius: '50%',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontWeight: 700, fontSize: '0.82rem',
+                                  background: done
+                                    ? 'var(--color-gold)'
+                                    : 'var(--color-surface)',
+                                  color: done ? '#0f0e0b' : 'var(--color-text-dim)',
+                                  border: `2px solid ${done ? 'var(--color-gold)' : 'var(--color-border)'}`,
+                                  transition: 'all 0.3s',
+                                }}>
+                                  {done && idx === PROGRESS_STEPS.length - 1 ? '✓' : idx + 1}
+                                </div>
+                                <div style={{
+                                  fontSize: '0.7rem', marginTop: '0.4rem',
+                                  color: done ? 'var(--color-gold)' : 'var(--color-text-dim)',
+                                  fontWeight: done ? 600 : 400,
+                                  textAlign: 'center', maxWidth: '70px',
+                                  lineHeight: 1.3,
+                                }}>{step.label}</div>
+                              </div>
+                              {idx < PROGRESS_STEPS.length - 1 && (
+                                <div style={{
+                                  flex: 1, height: '2px', marginTop: '17px',
+                                  background: done ? 'var(--color-gold)' : 'var(--color-border)',
+                                  transition: 'background 0.3s',
+                                }} />
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Customer Info ── */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={S.sectionTitle}>📋 Thông Tin Khách Hàng</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem 1.5rem' }}>
                       {[
-                        { step: 1, label: 'Chờ xác nhận', statuses: ['PENDING', 'CONFIRMED', 'PREPARING', 'COMPLETED'] },
-                        { step: 2, label: 'Xác nhận', statuses: ['CONFIRMED', 'PREPARING', 'COMPLETED'] },
-                        { step: 3, label: 'Chuẩn bị', statuses: ['PREPARING', 'COMPLETED'] },
-                        { step: 4, label: 'Hoàn thành', statuses: ['COMPLETED'] }
-                      ].map((item, idx) => (
-                        <div key={idx} className="flex flex-col items-center flex-1">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white mb-2 ${
-                            item.statuses.includes(selectedOrder.status)
-                              ? 'bg-green-500'
-                              : 'bg-gray-300'
-                          }`}>
-                            {item.step === 4 && item.statuses.includes(selectedOrder.status) ? '✓' : item.step}
+                        { label: 'Tên', value: selectedOrder.user?.fullName || selectedOrder.user?.username || '—' },
+                        { label: 'Email', value: selectedOrder.user?.email || '—' },
+                        { label: 'Điện thoại', value: selectedOrder.deliveryPhone || '—' },
+                        { label: 'Địa chỉ', value: selectedOrder.deliveryAddress || '—' },
+                      ].map(({ label, value }) => (
+                        <div key={label}>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
+                            {label}
                           </div>
-                          <div className="text-xs text-center text-gray-600">{item.label}</div>
-                          {idx < 3 && (
-                            <div className={`h-1 w-full mt-2 ${
-                              item.statuses.includes(selectedOrder.status) && selectedOrder.status !== item.statuses[0]
-                                ? 'bg-green-500'
-                                : 'bg-gray-300'
-                            }`}></div>
-                          )}
+                          <div style={{ fontSize: '0.875rem', color: 'var(--color-text)', fontWeight: 600 }}>
+                            {value}
+                          </div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  {/* Customer Info */}
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">📋 Thông Tin Khách Hàng</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-gray-600">Tên</label>
-                        <p className="font-semibold text-gray-900">{selectedOrder.user?.fullName || selectedOrder.user?.username || '—'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600">Email</label>
-                        <p className="font-semibold text-gray-900">{selectedOrder.user?.email || '—'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600">Điện Thoại</label>
-                        <p className="font-semibold text-gray-900">{selectedOrder.deliveryPhone || '—'}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600">Địa Chỉ Giao</label>
-                        <p className="font-semibold text-gray-900">{selectedOrder.deliveryAddress || '—'}</p>
-                      </div>
+                  {/* ── Items ── */}
+                  <div style={{ marginBottom: '1.5rem' }}>
+                    <h3 style={S.sectionTitle}>🍽️ Danh Sách Món Ăn</h3>
+                    <div style={{
+                      background: 'var(--color-surface-2)',
+                      borderRadius: 'var(--radius-md)',
+                      border: '1px solid var(--color-border)',
+                      overflow: 'hidden',
+                    }}>
+                      {selectedOrder.items?.length > 0 ? selectedOrder.items.map((item, idx) => (
+                        <div key={idx} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                          padding: '0.75rem 1rem',
+                          borderBottom: idx < selectedOrder.items.length - 1
+                            ? '1px solid rgba(212,175,100,0.06)' : 'none',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                            <span style={{
+                              background: 'rgba(212,175,100,0.15)',
+                              color: 'var(--color-gold)',
+                              border: '1px solid rgba(212,175,100,0.25)',
+                              borderRadius: '4px',
+                              padding: '0.1rem 0.45rem',
+                              fontSize: '0.72rem', fontWeight: 700,
+                            }}>x{item.quantity}</span>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--color-text)', fontWeight: 500 }}>
+                              {item.menu?.name || item.name || 'Món ăn'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--color-gold)' }}>
+                            {((item.menu?.price || item.price || 0) * item.quantity).toLocaleString()} đ
+                          </span>
+                        </div>
+                      )) : (
+                        <p style={{ padding: '1rem', color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
+                          Không có món ăn nào
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Items */}
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">🍽️ Danh Sách Món Ăn</h3>
-                    {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                      <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
-                        {selectedOrder.items.map((item, idx) => (
-                          <div key={idx} className="flex justify-between items-center">
-                            <div>
-                              <p className="font-semibold text-gray-900">{item.menu?.name || item.name || 'Món ăn'}</p>
-                              <p className="text-sm text-gray-600">x{item.quantity}</p>
-                            </div>
-                            <p className="font-bold text-purple-600">
-                              {((item.menu?.price || item.price || 0) * item.quantity).toLocaleString()} đ
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-600">Không có món ăn nào</p>
-                    )}
-                  </div>
-
-                  {/* Notes */}
+                  {/* ── Notes ── */}
                   {selectedOrder.notes && (
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-900 mb-2">📝 Ghi Chú</h3>
-                      <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{selectedOrder.notes}</p>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <h3 style={S.sectionTitle}>📝 Ghi Chú</h3>
+                      <p style={{
+                        fontSize: '0.875rem', color: 'var(--color-text-muted)',
+                        background: 'var(--color-surface-2)',
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.875rem 1rem',
+                        borderLeft: '3px solid var(--color-gold)',
+                        margin: 0, lineHeight: 1.6,
+                      }}>{selectedOrder.notes}</p>
                     </div>
                   )}
 
-                  {/* Total Section */}
-                  <div className="border-t-2 pt-4">
-                    <div className="space-y-2 mb-4">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Tổng Cộng:</span>
-                        <strong className="text-lg text-purple-600">
-                          {(selectedOrder.total || 0).toLocaleString()} đ
-                        </strong>
+                  {/* ── Total ── */}
+                  <div style={{
+                    borderTop: '1px solid var(--color-border)',
+                    paddingTop: '1.25rem',
+                    marginBottom: '1.25rem',
+                  }}>
+                    {[
+                      { label: 'Tổng cộng', value: `${(selectedOrder.total || 0).toLocaleString()} đ`, gold: true, large: true },
+                      { label: 'Phương thức thanh toán', value: selectedOrder.paymentMethod || 'CASH' },
+                      {
+                        label: 'Trạng thái thanh toán',
+                        value: selectedOrder.paymentStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán',
+                        color: selectedOrder.paymentStatus === 'PAID' ? 'var(--color-success)' : 'var(--color-error)',
+                      },
+                      {
+                        label: 'Trạng thái đơn',
+                        value: STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status,
+                      },
+                      { label: 'Ngày đặt', value: formatDate(selectedOrder.createdAt) },
+                    ].map(({ label, value, gold, large, color }) => (
+                      <div key={label} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '0.5rem 0',
+                      }}>
+                        <span style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>{label}</span>
+                        <strong style={{
+                          fontSize: large ? '1.1rem' : '0.875rem',
+                          color: color || (gold ? 'var(--color-gold)' : 'var(--color-text)'),
+                        }}>{value}</strong>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Phương Thức Thanh Toán:</span>
-                        <strong className="text-gray-900">{selectedOrder.paymentMethod || 'CASH'}</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Trạng Thái Thanh Toán:</span>
-                        <strong className={selectedOrder.paymentStatus === 'PAID' ? 'text-green-600' : 'text-red-600'}>
-                          {selectedOrder.paymentStatus === 'PAID' ? '✅ Đã thanh toán' : '⏳ Chưa thanh toán'}
-                        </strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Trạng Thái Đơn:</span>
-                        <strong className="text-gray-900">{
-                          {
-                            PENDING: 'Chờ xác nhận',
-                            CONFIRMED: 'Đã xác nhận',
-                            PREPARING: 'Đang chuẩn bị',
-                            COMPLETED: 'Hoàn thành',
-                            CANCELLED: 'Đã hủy'
-                          }[selectedOrder.status] || selectedOrder.status
-                        }</strong>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Ngày Đặt:</span>
-                        <strong className="text-gray-900">{formatDate(selectedOrder.createdAt)}</strong>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
-                  {/* Action Buttons */}
+                  {/* ── Cancel Button ── */}
                   {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
                     <button
-                      className="w-full px-4 py-3 bg-red-500 text-white font-semibold rounded-lg hover:bg-red-600 transition"
+                      style={{
+                        width: '100%',
+                        padding: '0.875rem',
+                        background: 'rgba(248,113,113,0.1)',
+                        border: '1px solid rgba(248,113,113,0.25)',
+                        borderRadius: 'var(--radius-sm)',
+                        color: 'var(--color-error)',
+                        fontFamily: 'var(--font-body)',
+                        fontSize: '0.9rem', fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'var(--transition)',
+                      }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.18)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'rgba(248,113,113,0.1)' }}
                       onClick={() => alert('Tính năng hủy đơn sẽ được cập nhật')}
                     >
                       ✕ Hủy Đơn Hàng
