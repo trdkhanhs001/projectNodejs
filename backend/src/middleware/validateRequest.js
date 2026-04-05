@@ -1,8 +1,3 @@
-/**
- * Joi Validation Middleware
- * Validates request body against Joi schemas
- */
-
 const validateRequest = (schemaName) => {
   return (req, res, next) => {
     const ValidationSchemas = require('../utils/validation');

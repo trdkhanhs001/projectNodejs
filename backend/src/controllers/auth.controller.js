@@ -5,9 +5,6 @@ const { comparePassword, hashPassword } = require('../utils/password');
 const { generateOTP, validateOTP } = require('../utils/otp');
 const { sendOTP, sendWelcomeEmail } = require('../utils/email');
 
-/**
- * Login - Admin, Staff & User
- */
 const login = async (username, password) => {
   // Find admin
   let user = await Admin.findOne({ username }).select('+password');
@@ -64,9 +61,6 @@ const login = async (username, password) => {
   };
 };
 
-/**
- * Get current user info
- */
 const getCurrentUser = async (userInfo) => {
   const { id, role } = userInfo;
   let user;
@@ -94,9 +88,6 @@ const getCurrentUser = async (userInfo) => {
   };
 };
 
-/**
- * Login - Admin only
- */
 const loginAdmin = async (username, password) => {
   // Find admin
   const user = await Admin.findOne({ username }).select('+password');
@@ -134,9 +125,6 @@ const loginAdmin = async (username, password) => {
   };
 };
 
-/**
- * Login - Staff only
- */
 const loginStaff = async (username, password) => {
   // Find staff
   const user = await Staff.findOne({ username }).select('+password');
@@ -179,12 +167,9 @@ const loginStaff = async (username, password) => {
   };
 };
 
-/**
- * Login - User only
- */
-const loginUser = async (username, password) => {
+const requestLoginOTP = async (username, password) => {
   // Find user
-  const user = await User.findOne({ username }).select('+password');
+  const user = await User.findOne({ username }).select('+password +otpSentAt +otpVerificationAttempts');
 
   if (!user) {
     throw new Error('Invalid login credentials');
@@ -195,6 +180,76 @@ const loginUser = async (username, password) => {
   if (!isPasswordValid) {
     throw new Error('Invalid login credentials');
   }
+
+  // Check OTP verification attempts
+  if (user.otpVerificationAttempts >= 5) {
+    throw new Error('Too many OTP verification attempts. Please try again later.');
+  }
+
+  // Generate OTP
+  const otp = generateOTP(6);
+  
+  // Save OTP to database (hashed)
+  user.otpCode = otp;
+  user.otpSentAt = new Date();
+  await user.save();
+
+  // Send OTP via email
+  await sendOTP(user.email, otp, 'login');
+
+  return {
+    message: 'OTP sent to email successfully',
+    email: user.email.replace(/(.{2}).*(@.*)/, '$1***$2'), // Mask email
+    userId: user._id.toString()
+  };
+};
+
+const verifyLoginOTP = async (userId, otp) => {
+  // Find user
+  const user = await User.findById(userId).select('+otpCode +otpSentAt +otpVerificationAttempts');
+
+  if (!user) {
+    throw new Error('User not found');
+  }
+
+  // Validate OTP format
+  if (!validateOTP(otp)) {
+    throw new Error('Invalid OTP format');
+  }
+
+  // Check if OTP exists and is still valid
+  if (!user.otpCode || !user.otpSentAt) {
+    throw new Error('No OTP requested. Please request OTP first.');
+  }
+
+  // Check OTP expiration (10 minutes)
+  const otpExpiry = new Date(user.otpSentAt.getTime() + 10 * 60 * 1000);
+  if (new Date() > otpExpiry) {
+    user.otpCode = null;
+    user.otpSentAt = null;
+    user.otpVerificationAttempts = 0;
+    await user.save();
+    throw new Error('OTP has expired. Please request a new one.');
+  }
+
+  // Check OTP verification attempts
+  if (user.otpVerificationAttempts >= 5) {
+    throw new Error('Too many OTP verification attempts. Please request a new OTP.');
+  }
+
+  // Verify OTP
+  if (user.otpCode !== otp) {
+    user.otpVerificationAttempts += 1;
+    await user.save();
+    throw new Error('Invalid OTP');
+  }
+
+  // Clear OTP
+  user.otpCode = null;
+  user.otpSentAt = null;
+  user.otpVerificationAttempts = 0;
+  user.otpVerified = true;
+  await user.save();
 
   // Generate token pair
   const tokenPayload = {
@@ -219,66 +274,16 @@ const loginUser = async (username, password) => {
   };
 };
 
-/**
- * Register - User only
- */
-const registerUser = async (username, email, password, fullName, phone, address = '') => {
-  // Check if username exists (any role)
-  let existingUser = await User.findOne({ username });
-  if (existingUser) {
-    throw new Error('Username already exists');
-  }
-
-  // Check if email exists (any role)
-  existingUser = await User.findOne({ email });
-  if (existingUser) {
-    throw new Error('Email already exists');
-  }
-
-  // Hash password
-  const hashedPassword = await hashPassword(password);
-
-  // Create new user
-  const newUser = new User({
-    username,
-    email,
-    password: hashedPassword,
-    fullName,
-    phone,
-    address: address || '',
-    role: 'USER'
-  });
-
-  await newUser.save();
-
-  // Generate token pair
-  const tokenPayload = {
-    id: newUser._id.toString(),
-    username: newUser.username,
-    email: newUser.email,
-    role: 'USER'
-  };
-  const { accessToken, refreshToken } = generateTokenPair(tokenPayload);
-
-  return {
-    message: 'Registration successful',
-    accessToken,
-    refreshToken,
-    user: {
-      id: newUser._id,
-      username: newUser.username,
-      email: newUser.email,
-      role: 'USER',
-      fullName: newUser.fullName
-    }
-  };
+const loginUser = async (username, password) => {
+  // This endpoint is deprecated - use requestLoginOTP + verifyLoginOTP instead
+  throw new Error('This endpoint is deprecated. Use /auth/user/request-login-otp and /auth/user/verify-login-otp');
 };
 
-/**
- * Request OTP for signup
- * @param {string} email 
- * @returns {object}
- */
+const registerUser = async (username, email, password, fullName, phone, address = '') => {
+  // Free registration is disabled - users must use OTP flow
+  throw new Error('Free registration is disabled. Please use the OTP verification flow: /auth/user/request-otp -> /auth/user/verify-otp');
+};
+
 const requestSignupOTP = async (email) => {
   try {
     // Check if email already exists
@@ -313,16 +318,6 @@ const requestSignupOTP = async (email) => {
   }
 };
 
-/**
- * Verify OTP and register user
- * @param {string} email 
- * @param {string} otp 
- * @param {string} username 
- * @param {string} password 
- * @param {string} fullName 
- * @param {string} phone 
- * @returns {object}
- */
 const verifyOTPAndRegister = async (email, otp, username, password, fullName, phone, address = '') => {
   try {
     // Validate OTP format
@@ -412,5 +407,7 @@ module.exports = {
   getCurrentUser,
   registerUser,
   requestSignupOTP,
-  verifyOTPAndRegister
+  verifyOTPAndRegister,
+  requestLoginOTP,
+  verifyLoginOTP
 };

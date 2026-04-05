@@ -1,21 +1,17 @@
 const Cart = require('../models/cart.model');
 const Menu = require('../models/menu.model');
 
-// Get user's cart
 exports.getCart = async (userId) => {
   const cart = await Cart.findOne({ user: userId }).populate('items.menu');
   return cart;
 };
 
-// Add item to cart - Using atomic operations to prevent race conditions
 exports.addToCart = async (userId, { menuId, quantity }) => {
-  // Verify menu item exists
   const menuItem = await Menu.findById(menuId);
   if (!menuItem) {
     throw new Error('Menu item not found');
   }
 
-  // Use atomic update operator to prevent race conditions
   let cart = await Cart.findOneAndUpdate(
     { user: userId, 'items.menu': menuId },
     { $inc: { 'items.$.quantity': quantity } },

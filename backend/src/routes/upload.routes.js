@@ -4,11 +4,6 @@ const uploadController = require('../controllers/upload.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-/**
- * POST /api/upload/avatar
- * Upload user avatar - requires user login
- * Accepts: multipart/form-data with 'file' field
- */
 router.post('/avatar', checkLogin, checkRole('USER'), upload.single('file'), async function (req, res, next) {
   try {
     await uploadController.uploadUserAvatar(req, res);
@@ -17,11 +12,6 @@ router.post('/avatar', checkLogin, checkRole('USER'), upload.single('file'), asy
   }
 });
 
-/**
- * POST /api/upload/menu/:menuId
- * Upload menu item image - requires admin
- * Accepts: multipart/form-data with 'file' field
- */
 router.post('/menu/:menuId', checkLogin, checkRole('ADMIN'), upload.single('file'), async function (req, res, next) {
   try {
     await uploadController.uploadMenuImage(req, res);
@@ -30,11 +20,6 @@ router.post('/menu/:menuId', checkLogin, checkRole('ADMIN'), upload.single('file
   }
 });
 
-/**
- * POST /api/upload/staff/:staffId
- * Upload staff avatar - requires admin
- * Accepts: multipart/form-data with 'file' field
- */
 router.post('/staff/:staffId', checkLogin, checkRole('ADMIN'), upload.single('file'), async function (req, res, next) {
   try {
     await uploadController.uploadStaffImage(req, res);
@@ -43,11 +28,6 @@ router.post('/staff/:staffId', checkLogin, checkRole('ADMIN'), upload.single('fi
   }
 });
 
-/**
- * POST /api/upload/signature
- * Get upload signature for client-side upload
- * Used for temporary uploads before moving to permanent storage
- */
 router.post('/signature', checkLogin, async function (req, res, next) {
   try {
     await uploadController.getUploadSignature(req, res);
@@ -56,11 +36,6 @@ router.post('/signature', checkLogin, async function (req, res, next) {
   }
 });
 
-/**
- * DELETE /api/upload/:publicId
- * Delete image from Cloudinary - requires admin
- * Body: { publicId }
- */
 router.delete('/:publicId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const publicId = req.params.publicId;

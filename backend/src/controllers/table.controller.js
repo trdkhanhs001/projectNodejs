@@ -1,6 +1,5 @@
 const DiningTable = require('../models/diningTable.model');
 
-// Get all tables
 exports.getAllTables = async (page = 1, limit = 20) => {
   const skip = (page - 1) * limit;
 
@@ -20,7 +19,6 @@ exports.getAllTables = async (page = 1, limit = 20) => {
   };
 };
 
-// Get available tables only
 exports.getAvailableTables = async () => {
   const tables = await DiningTable.find({
     isDeleted: false,

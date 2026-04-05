@@ -1,8 +1,5 @@
 const { verifyToken } = require('../utils/jwt');
 
-/**
- * Authenticate user from JWT token
- */
 const authenticate = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -20,10 +17,6 @@ const authenticate = (req, res, next) => {
   }
 };
 
-/**
- * Authorize user by role
- * @param {...string} allowedRoles - Roles allowed to access
- */
 const authorize = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -42,9 +35,6 @@ const authorize = (...allowedRoles) => {
   };
 };
 
-/**
- * Aliases for backward compatibility with standard Express pattern
- */
 const checkLogin = authenticate;
 const checkRole = (...roles) => authorize(...roles);
 

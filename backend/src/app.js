@@ -53,6 +53,8 @@ app.use('/api/table', require('./routes/table.routes'));
 app.use('/api/staff', require('./routes/staff.routes'));
 app.use('/api/cart', require('./routes/cart.routes'));
 app.use('/api/order', require('./routes/order.routes'));
+app.use('/api/payment', require('./routes/payment.routes'));
+app.use('/api/discount', require('./routes/discount.routes'));
 app.use('/api/review', require('./routes/review.routes'));
 app.use('/api/upload', require('./routes/upload.routes'));
 

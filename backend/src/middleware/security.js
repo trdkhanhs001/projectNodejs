@@ -1,8 +1,3 @@
-/**
- * Security middleware
- * Add security headers và CORS configuration
- */
-
 const securityHeaders = (req, res, next) => {
   // Prevent clickjacking
   res.setHeader('X-Frame-Options', 'DENY');

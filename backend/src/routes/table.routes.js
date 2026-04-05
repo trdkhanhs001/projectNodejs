@@ -3,10 +3,6 @@ const router = express.Router();
 const tableController = require('../controllers/table.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 
-/**
- * GET /api/table
- * Get all tables - requires admin
- */
 router.get('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const { page = 1, limit = 20 } = req.query;
@@ -17,10 +13,6 @@ router.get('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) 
   }
 });
 
-/**
- * GET /api/table/available
- * Get available tables only - no auth required (for staff POS)
- */
 router.get('/available', async function (req, res, next) {
   try {
     const tables = await tableController.getAvailableTables();
@@ -30,10 +22,6 @@ router.get('/available', async function (req, res, next) {
   }
 });
 
-/**
- * GET /api/table/stats
- * Get table statistics - requires staff or admin
- */
 router.get('/stats', checkLogin, checkRole('STAFF', 'ADMIN'), async function (req, res, next) {
   try {
     const stats = await tableController.getTableStats();
@@ -43,10 +31,6 @@ router.get('/stats', checkLogin, checkRole('STAFF', 'ADMIN'), async function (re
   }
 });
 
-/**
- * GET /api/table/:id
- * Get table by ID - requires admin
- */
 router.get('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const table = await tableController.getTableById(req.params.id);
@@ -59,11 +43,6 @@ router.get('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, nex
   }
 });
 
-/**
- * POST /api/table
- * Create new table - requires admin
- * Body: { tableNumber, capacity, area?, notes? }
- */
 router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await tableController.createTable(req.body, req.user.id);
@@ -73,11 +52,6 @@ router.post('/', checkLogin, checkRole('ADMIN'), async function (req, res, next)
   }
 });
 
-/**
- * PUT /api/table/:id
- * Update table - requires admin
- * Body: { capacity?, area?, notes?, status? }
- */
 router.put('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await tableController.updateTable(req.params.id, req.body, req.user.id);
@@ -87,10 +61,6 @@ router.put('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, nex
   }
 });
 
-/**
- * DELETE /api/table/:id
- * Soft delete table - requires admin
- */
 router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await tableController.deleteTable(req.params.id);

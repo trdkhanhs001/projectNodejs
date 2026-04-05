@@ -1,8 +1,3 @@
-/**
- * Centralized Error Handler Middleware
- * Consistently formats error responses across the API
- */
-
 class ApiError extends Error {
   constructor(statusCode, message, details = null) {
     super(message);
@@ -12,10 +7,6 @@ class ApiError extends Error {
   }
 }
 
-/**
- * Error handler middleware
- * Must be used as the last middleware
- */
 const errorHandler = (err, req, res, next) => {
   // Default error values
   let statusCode = err.statusCode || 500;
@@ -114,20 +105,12 @@ const errorHandler = (err, req, res, next) => {
   res.status(statusCode).json(errorResponse);
 };
 
-/**
- * Async wrapper for route handlers
- * Automatically catches errors and passes to error handler
- */
 const asyncHandler = (fn) => {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 };
 
-/**
- * 404 Not Found middleware
- * Should be placed after all other routes
- */
 const notFoundHandler = (req, res, next) => {
   const error = new ApiError(
     404,

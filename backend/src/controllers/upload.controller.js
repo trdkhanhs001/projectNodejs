@@ -3,9 +3,6 @@ const User = require('../models/user.model');
 const Menu = require('../models/menu.model');
 const Staff = require('../models/staff.model');
 
-/**
- * Upload user avatar to Cloudinary
- */
 exports.uploadUserAvatar = async (req, res) => {
   try {
     if (!req.file) {
@@ -54,9 +51,6 @@ exports.uploadUserAvatar = async (req, res) => {
   }
 };
 
-/**
- * Upload menu item image to Cloudinary
- */
 exports.uploadMenuImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -111,9 +105,6 @@ exports.uploadMenuImage = async (req, res) => {
   }
 };
 
-/**
- * Upload staff avatar to Cloudinary
- */
 exports.uploadStaffImage = async (req, res) => {
   try {
     if (!req.file) {
@@ -168,9 +159,6 @@ exports.uploadStaffImage = async (req, res) => {
   }
 };
 
-/**
- * Delete image from Cloudinary
- */
 exports.deleteImage = async (req, res) => {
   try {
     const { publicId } = req.body;
@@ -190,9 +178,6 @@ exports.deleteImage = async (req, res) => {
   }
 };
 
-/**
- * Get upload signature for client-side upload (optional)
- */
 exports.getUploadSignature = async (req, res) => {
   try {
     const timestamp = Math.round(new Date().getTime() / 1000);

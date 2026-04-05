@@ -1,8 +1,3 @@
-/**
- * Generate random OTP code
- * @param {number} length - OTP length (default: 6)
- * @returns {string} OTP code
- */
 const generateOTP = (length = 6) => {
   const digits = '0123456789';
   let otp = '';

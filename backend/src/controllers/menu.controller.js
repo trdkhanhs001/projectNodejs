@@ -1,7 +1,6 @@
 const Menu = require('../models/menu.model');
 const cloudinary = require('../config/cloudinary');
 
-// Get all menus
 exports.getAllMenus = async () => {
   const menus = await Menu.find({ isDeleted: false })
     .populate('category', 'name');

@@ -1,7 +1,6 @@
 const Review = require('../models/review.model');
 const Menu = require('../models/menu.model');
 
-// Get all reviews for a menu item
 exports.getMenuReviews = async (menuId) => {
   const reviews = await Review.find({ menu: menuId, isDeleted: false })
     .populate('user', 'fullName email')

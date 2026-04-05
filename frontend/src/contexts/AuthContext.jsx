@@ -10,6 +10,7 @@ const AuthContext = createContext(null)
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
+  const [refreshToken, setRefreshToken] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // Lấy token từ localStorage khi app mount
@@ -27,21 +28,35 @@ export function AuthProvider({ children }) {
   // Xác minh token với backend
   const verifyToken = async (token) => {
     try {
-      console.log('[AUTH] Verifying token...')
       // Don't use apiClient here since it has its own interceptor
       // Use axios directly with explicit Authorization header
       const response = await axios.get(`${import.meta.env.VITE_API_URL || '/api'}/auth/profile`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log('[AUTH] Token verified, user:', response.data.user?.username)
       setUser(response.data.user)
       setLoading(false)
     } catch (err) {
       console.error('[AUTH] Token verification failed:', err.message)
       localStorage.removeItem('auth_token')
+      localStorage.removeItem('refresh_token')
       setToken(null)
+      setRefreshToken(null)
       setUser(null)
       setLoading(false)
+    }
+  }
+
+  // Hàm login chung - lưu token và user info
+  const loginWithToken = (accessToken, newRefreshToken = null, userData = null) => {
+    localStorage.setItem('auth_token', accessToken)
+    if (newRefreshToken) {
+      localStorage.setItem('refresh_token', newRefreshToken)
+      setRefreshToken(newRefreshToken)
+    }
+    apiClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+    setToken(accessToken)
+    if (userData) {
+      setUser(userData)
     }
   }
 
@@ -53,13 +68,8 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { accessToken: newToken, user: userData } = response.data
-
-      localStorage.setItem('auth_token', newToken)
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-
-      setToken(newToken)
-      setUser(userData)
+      const { accessToken: newToken, refreshToken: newRefreshToken, user: userData } = response.data
+      loginWithToken(newToken, newRefreshToken, userData)
 
       return { success: true, message: 'Đăng nhập Admin thành công!', role: userData.role }
     } catch (err) {
@@ -76,13 +86,8 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { accessToken: newToken, user: userData } = response.data
-
-      localStorage.setItem('auth_token', newToken)
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-
-      setToken(newToken)
-      setUser(userData)
+      const { accessToken: newToken, refreshToken: newRefreshToken, user: userData } = response.data
+      loginWithToken(newToken, newRefreshToken, userData)
 
       return { success: true, message: 'Đăng nhập Staff thành công!', role: userData.role }
     } catch (err) {
@@ -91,7 +96,7 @@ export function AuthProvider({ children }) {
     }
   }
 
-  // Hàm login User
+  // Hàm login User (deprecated - use OTP flow instead)
   const loginUser = async (username, password) => {
     try {
       const response = await apiClient.post('/auth/user/login', {
@@ -99,22 +104,17 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { accessToken: newToken, user: userData } = response.data
-
-      localStorage.setItem('auth_token', newToken)
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-
-      setToken(newToken)
-      setUser(userData)
+      const { accessToken: newToken, refreshToken: newRefreshToken, user: userData } = response.data
+      loginWithToken(newToken, newRefreshToken, userData)
 
       return { success: true, message: 'Đăng nhập thành công!', role: userData.role }
     } catch (err) {
-      const errorMsg = err.response?.data?.message || 'Lỗi đăng nhập'
+      const errorMsg = err.response?.data?.message || 'User login via OTP flow is required'
       return { success: false, message: errorMsg }
     }
   }
 
-  // Hàm login (giữ lại cho backwards compatibility)
+  // Hàm login (giữ lại cho backwards compatibility - Admin/Staff)
   const login = async (username, password) => {
     try {
       const response = await apiClient.post('/auth/login', {
@@ -122,14 +122,8 @@ export function AuthProvider({ children }) {
         password
       })
 
-      const { accessToken: newToken, user: userData } = response.data
-
-      // Lưu token vào localStorage
-      localStorage.setItem('auth_token', newToken)
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-
-      setToken(newToken)
-      setUser(userData)
+      const { accessToken: newToken, refreshToken: newRefreshToken, user: userData } = response.data
+      loginWithToken(newToken, newRefreshToken, userData)
 
       return { success: true, message: 'Đăng nhập thành công!', role: userData.role }
     } catch (err) {
@@ -141,8 +135,10 @@ export function AuthProvider({ children }) {
   // Hàm logout
   const logout = () => {
     localStorage.removeItem('auth_token')
+    localStorage.removeItem('refresh_token')
     delete apiClient.defaults.headers.common['Authorization']
     setToken(null)
+    setRefreshToken(null)
     setUser(null)
   }
 
@@ -153,12 +149,14 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user,
       token,
+      refreshToken,
       loading,
       isAuthenticated,
-      login,
+      loginWithToken,
       loginAdmin,
       loginStaff,
       loginUser,
+      login,
       logout
     }}>
       {children}

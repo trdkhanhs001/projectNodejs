@@ -69,6 +69,29 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: [0, 'Loyalty points cannot be negative']
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false
+    },
+    otpVerified: {
+      type: Boolean,
+      default: false
+    },
+    otpCode: {
+      type: String,
+      default: null,
+      select: false
+    },
+    otpSentAt: {
+      type: Date,
+      default: null,
+      select: false
+    },
+    otpVerificationAttempts: {
+      type: Number,
+      default: 0,
+      select: false
     }
   },
   {

@@ -5,7 +5,6 @@ const User = require('../models/user.model');
 const Cart = require('../models/cart.model');
 const DiningTable = require('../models/diningTable.model');
 
-// Get all orders
 exports.getAllOrders = async () => {
   const orders = await Order.find({ isDeleted: false })
     .populate('user', 'fullName email phone')
@@ -14,7 +13,6 @@ exports.getAllOrders = async () => {
   return orders;
 };
 
-// Get user's orders
 exports.getUserOrders = async (userId) => {
   const orders = await Order.find({ user: userId, isDeleted: false })
     .populate('items')
@@ -22,7 +20,6 @@ exports.getUserOrders = async (userId) => {
   return orders;
 };
 
-// Get staff's orders
 exports.getStaffOrders = async (staffId) => {
   const orders = await Order.find({ assignedStaff: staffId, isDeleted: false })
     .populate('user', 'fullName email phone')
@@ -165,7 +162,7 @@ exports.updateOrderStatus = async (orderId, data, user) => {
     // Mark table as available if order is delivered or cancelled (for DINE_IN)
     if ((status === 'DELIVERED' || status === 'CANCELLED') && order.tableNumber) {
       await DiningTable.findOneAndUpdate(
-        { tableNumber: order.tableNumber.toString() },
+        { tableNumber: order.tableNumber },
         { status: 'AVAILABLE' }
       );
     }
@@ -254,8 +251,10 @@ exports.createGuestOrder = async (data) => {
 
   // Mark table as occupied if DINE_IN order
   if (orderType === 'DINE_IN' && tableNumber) {
+    // Normalize table number - trim whitespace
+    const normalizedTableNum = String(tableNumber).trim();
     await DiningTable.findOneAndUpdate(
-      { tableNumber: tableNumber.toString() },
+      { tableNumber: normalizedTableNum },
       { status: 'OCCUPIED' }
     );
   }
@@ -276,12 +275,15 @@ exports.createPosOrder = async (staffId, data) => {
     throw new Error('Table number required for POS orders');
   }
 
-  const table = await DiningTable.findOne({ tableNumber: tableNumber.toString() });
+  // Normalize table number - trim whitespace
+  const normalizedTableNumber = String(tableNumber).trim();
+
+  const table = await DiningTable.findOne({ tableNumber: normalizedTableNumber });
   if (!table) {
-    throw new Error(`Table ${tableNumber} not found`);
+    throw new Error(`Table ${normalizedTableNumber} not found. Available format: T1-1, T2-5, L-1, etc.`);
   }
   if (table.status === 'OCCUPIED') {
-    throw new Error(`Table ${tableNumber} is already occupied`);
+    throw new Error(`Table ${normalizedTableNumber} is already occupied`);
   }
 
   let totalPrice = 0;
@@ -323,11 +325,14 @@ exports.createPosOrder = async (staffId, data) => {
   });
 
   await order.save();
-  await order.populate('items').populate('preparedBy', 'fullName email');
+  await order.populate([
+    { path: 'items' },
+    { path: 'preparedBy', select: 'fullName email' }
+  ]);
 
   // Mark table as occupied
   await DiningTable.findOneAndUpdate(
-    { tableNumber: tableNumber.toString() },
+    { tableNumber: normalizedTableNumber },
     { status: 'OCCUPIED' }
   );
 

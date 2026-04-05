@@ -14,9 +14,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-/**
- * Verify email configuration
- */
 const verifyEmailConfig = async () => {
   try {
     const verified = await transporter.verify();
@@ -30,12 +27,6 @@ const verifyEmailConfig = async () => {
   }
 };
 
-/**
- * Send OTP email
- * @param {string} email - Recipient email
- * @param {string} otp - OTP code
- * @param {string} purpose - 'signup' | 'forgot_password' | 'verify_email'
- */
 const sendOTP = async (email, otp, purpose = 'signup') => {
   try {
     // Email templates based on purpose
@@ -89,9 +80,6 @@ const sendOTP = async (email, otp, purpose = 'signup') => {
   }
 };
 
-/**
- * Send welcome email
- */
 const sendWelcomeEmail = async (email, fullName) => {
   try {
     const mailOptions = {

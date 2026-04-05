@@ -7,11 +7,6 @@ if (!JWT_SECRET) {
 const JWT_EXPIRATION = process.env.JWT_EXPIRE || '15m'; // Access token: 15 minutes
 const REFRESH_TOKEN_EXPIRATION = process.env.REFRESH_TOKEN_EXPIRE || '7d'; // Refresh token: 7 days
 
-/**
- * Generate JWT access token
- * @param {object} payload - Token payload
- * @returns {string} - JWT token
- */
 const generateToken = (payload) => {
   try {
     return jwt.sign(payload, JWT_SECRET, {
@@ -22,11 +17,6 @@ const generateToken = (payload) => {
   }
 };
 
-/**
- * Generate refresh token
- * @param {object} payload - Token payload
- * @returns {string} - Refresh token
- */
 const generateRefreshToken = (payload) => {
   try {
     return jwt.sign(payload, JWT_SECRET, {
@@ -37,11 +27,6 @@ const generateRefreshToken = (payload) => {
   }
 };
 
-/**
- * Generate both access and refresh tokens
- * @param {object} payload - Token payload
- * @returns {object} - { accessToken, refreshToken }
- */
 const generateTokenPair = (payload) => {
   return {
     accessToken: generateToken(payload),
@@ -49,11 +34,6 @@ const generateTokenPair = (payload) => {
   };
 };
 
-/**
- * Verify JWT token
- * @param {string} token - JWT token
- * @returns {object} - Decoded token payload
- */
 const verifyToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);
@@ -62,11 +42,6 @@ const verifyToken = (token) => {
   }
 };
 
-/**
- * Verify refresh token
- * @param {string} token - Refresh token
- * @returns {object} - Decoded token payload
- */
 const verifyRefreshToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);

@@ -6,10 +6,6 @@ const { checkLogin } = require('../middleware/auth');
 const { verifyRefreshToken } = require('../utils/jwt');
 const { generateTokenPair } = require('../utils/jwt');
 
-/**
- * Rate limiter for login endpoint
- * Max 5 attempts per 15 minutes
- */
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 requests per windowMs
@@ -18,11 +14,6 @@ const loginLimiter = rateLimit({
   legacyHeaders: false
 });
 
-/**
- * POST /api/auth/admin/login
- * Login for admin only
- * Body: { username, password }
- */
 router.post('/admin/login', loginLimiter, async function (req, res, next) {
   try {
     const { username, password } = req.body;
@@ -42,11 +33,6 @@ router.post('/admin/login', loginLimiter, async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/auth/staff/login
- * Login for staff only
- * Body: { username, password }
- */
 router.post('/staff/login', loginLimiter, async function (req, res, next) {
   try {
     const { username, password } = req.body;
@@ -66,35 +52,21 @@ router.post('/staff/login', loginLimiter, async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/auth/user/login
- * Login for user only
- * Body: { username, password }
- */
 router.post('/user/login', loginLimiter, async function (req, res, next) {
   try {
-    const { username, password } = req.body;
-    
-    if (!username || !password) {
-      return res.status(400).json({ message: 'Username and password required' });
-    }
-
-    if (username.length > 50 || password.length > 100) {
-      return res.status(400).json({ message: 'Invalid username or password format' });
-    }
-
-    const result = await authController.loginUser(username, password);
-    res.status(200).json(result);
+    // Direct login is deprecated - use OTP flow instead
+    return res.status(403).json({ 
+      message: 'Direct login is disabled for security. Please use OTP verification.',
+      steps: [
+        '1. POST /auth/user/request-login-otp with username and password',
+        '2. POST /auth/user/verify-login-otp with userId and otp'
+      ]
+    });
   } catch (err) {
     res.status(401).json({ message: err.message });
   }
 });
 
-/**
- * POST /api/auth/login
- * Login for admin and staff
- * Body: { username, password }
- */
 router.post('/login', loginLimiter, async function (req, res, next) {
   try {
     const { username, password } = req.body;
@@ -115,10 +87,6 @@ router.post('/login', loginLimiter, async function (req, res, next) {
   }
 });
 
-/**
- * GET /api/auth/profile
- * Get current user profile - requires login
- */
 router.get('/profile', checkLogin, async function (req, res, next) {
   try {
     const result = await authController.getCurrentUser(req.user);
@@ -128,31 +96,21 @@ router.get('/profile', checkLogin, async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/auth/register
- * Register new user (USER role only) - Old method (kept for backward compatibility)
- * Body: { username, email, password, fullName, phone, address }
- */
 router.post('/register', async function (req, res, next) {
   try {
-    const { username, email, password, fullName, phone, address } = req.body;
-    
-    if (!username || !email || !password || !fullName || !phone) {
-      return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const result = await authController.registerUser(username, email, password, fullName, phone, address);
-    res.status(201).json(result);
+    // Free registration is disabled - use OTP flow instead
+    return res.status(403).json({ 
+      message: 'Free registration is disabled. Please use the OTP verification flow.',
+      steps: [
+        '1. POST /auth/request-otp with email',
+        '2. POST /auth/verify-otp with email, otp, username, password, fullName, phone, address'
+      ]
+    });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-/**
- * POST /api/auth/request-otp
- * Request OTP for email verification (signup)
- * Body: { email }
- */
 router.post('/request-otp', async function (req, res, next) {
   try {
     const { email } = req.body;
@@ -174,11 +132,6 @@ router.post('/request-otp', async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/auth/refresh
- * Refresh access token using refresh token
- * Body: { refreshToken }
- */
 router.post('/refresh', async function (req, res, next) {
   try {
     const { refreshToken } = req.body;
@@ -208,11 +161,6 @@ router.post('/refresh', async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/auth/verify-otp
- * Verify OTP and register user
- * Body: { email, otp, username, password, fullName, phone, address }
- */
 router.post('/verify-otp', async function (req, res, next) {
   try {
     const { email, otp, username, password, fullName, phone, address } = req.body;
@@ -233,6 +181,41 @@ router.post('/verify-otp', async function (req, res, next) {
     res.status(201).json(result);
   } catch (err) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+// Login OTP flow
+router.post('/user/request-login-otp', loginLimiter, async function (req, res, next) {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ message: 'Username and password required' });
+    }
+
+    if (username.length > 50 || password.length > 100) {
+      return res.status(400).json({ message: 'Invalid username or password format' });
+    }
+
+    const result = await authController.requestLoginOTP(username, password);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(401).json({ message: err.message });
+  }
+});
+
+router.post('/user/verify-login-otp', async function (req, res, next) {
+  try {
+    const { userId, otp } = req.body;
+    
+    if (!userId || !otp) {
+      return res.status(400).json({ message: 'User ID and OTP are required' });
+    }
+
+    const result = await authController.verifyLoginOTP(userId, otp);
+    res.status(200).json(result);
+  } catch (err) {
+    res.status(401).json({ message: err.message });
   }
 });
 

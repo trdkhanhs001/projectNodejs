@@ -3,7 +3,6 @@ const cloudinary = require('../config/cloudinary');
 const bcrypt = require('bcrypt');
 const { buildSafeSearchQuery } = require('../utils/security');
 
-// Get all staff with pagination and search
 exports.getAllStaff = async (filters = {}, page = 1, limit = 10) => {
   try {
     const skip = (page - 1) * limit;

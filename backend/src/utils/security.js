@@ -1,15 +1,3 @@
-/**
- * Password security utilities
- */
-
-/**
- * Validate password strength
- * Rules:
- * - Minimum 8 characters
- * - At least 1 uppercase letter
- * - At least 1 lowercase letter
- * - At least 1 number
- */
 const validatePasswordStrength = (password) => {
   const errors = [];
 
@@ -35,9 +23,6 @@ const validatePasswordStrength = (password) => {
   };
 };
 
-/**
- * Check for common weak passwords
- */
 const isCommonPassword = (password) => {
   const commonPasswords = [
     'password', '123456', '12345678', 'qwerty', 'abc123',
@@ -49,22 +34,11 @@ const isCommonPassword = (password) => {
   );
 };
 
-/**
- * Escape special regex characters to prevent regex injection
- * @param {string} str - The string to escape
- * @returns {string} The escaped string safe for use in regex
- */
 const escapeRegex = (str) => {
   if (!str) return '';
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 };
 
-/**
- * Validate and sanitize search query
- * @param {string} query - The search query to sanitize
- * @param {number} maxLength - Maximum allowed length
- * @returns {string|null} Sanitized query or null if invalid
- */
 const sanitizeSearchQuery = (query, maxLength = 100) => {
   if (!query) return null;
   
@@ -84,12 +58,6 @@ const sanitizeSearchQuery = (query, maxLength = 100) => {
   return query;
 };
 
-/**
- * Build safe search query for MongoDB
- * @param {string} searchTerm - The search term
- * @param {array} fields - Fields to search in
- * @returns {object} MongoDB query object
- */
 const buildSafeSearchQuery = (searchTerm, fields = []) => {
   if (!searchTerm || fields.length === 0) return {};
   

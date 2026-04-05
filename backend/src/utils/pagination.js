@@ -1,8 +1,3 @@
-/**
- * Pagination Helper
- * Standardized pagination for list endpoints
- */
-
 const getPaginationParams = (queryPage, queryLimit) => {
   const page = Math.max(1, parseInt(queryPage) || 1);
   const limit = Math.min(100, Math.max(1, parseInt(queryLimit) || 20));

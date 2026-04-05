@@ -1,13 +1,12 @@
-/**
- * Seed categories and menu items
- * Run: node scripts/seedMenu.js
- */
-
 require('dotenv').config();
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 const Category = require('../src/models/category.model');
 const Menu = require('../src/models/menu.model');
 const Admin = require('../src/models/admin.model');
+const cloudinary = require('../src/config/cloudinary');
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -22,8 +21,47 @@ const categories = [
   { name: 'Đồ Uống', description: 'Nước, nước ngọt', displayOrder: 8 },
 ];
 
+async function uploadImageToCloudinary(imagePath, menuName) {
+  try {
+    console.log(`   📥 Downloading image from: ${imagePath}`);
+    
+    const response = await axios.get(imagePath, {
+      responseType: 'arraybuffer',
+      timeout: 10000
+    });
+
+    console.log(`   ☁️  Uploading to Cloudinary...`);
+    
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'restaurant/menus',
+          resource_type: 'auto',
+          public_id: `menu_${menuName.toLowerCase().replace(/\s+/g, '_')}`,
+          format: 'jpg',
+          quality: 'auto',
+          overwrite: true
+        },
+        (error, result) => {
+          if (error) {
+            console.error(`❌ Upload failed: ${error.message}`);
+            reject(error);
+          } else {
+            console.log(`✅ Uploaded: ${menuName}`);
+            resolve(result.secure_url);
+          }
+        }
+      );
+      
+      uploadStream.end(response.data);
+    });
+  } catch (error) {
+    console.error(`❌ Error: ${error.message}`);
+    return null;
+  }
+}
+
 const menus = [
-  // Khai vị
   {
     name: 'Chả Cuốn',
     description: 'Chả cuốn tôm nằm gạo, nước mắm',
@@ -33,6 +71,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 10,
     category: 'Khai Vị',
+    imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&h=500&fit=crop'
   },
   {
     name: 'Gỏi Cuốn',
@@ -43,6 +82,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 5,
     category: 'Khai Vị',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=500&fit=crop'
   },
   {
     name: 'Cánh Gà Nước Mắm',
@@ -53,8 +93,8 @@ const menus = [
     isSpicy: true,
     preparationTime: 15,
     category: 'Khai Vị',
+    imageUrl: 'https://images.unsplash.com/photo-1598675502828-92f2fb2ff625?w=500&h=500&fit=crop'
   },
-  // Canh & Súp
   {
     name: 'Canh Chua Cá',
     description: 'Canh chua cá tươi, dứa, cà chua',
@@ -64,6 +104,7 @@ const menus = [
     isSpicy: true,
     preparationTime: 20,
     category: 'Canh & Súp',
+    imageUrl: 'https://images.unsplash.com/photo-1618164436241-4473940571cd?w=500&h=500&fit=crop'
   },
   {
     name: 'Canh Gà Sâm',
@@ -74,6 +115,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 25,
     category: 'Canh & Súp',
+    imageUrl: 'https://images.unsplash.com/photo-1585962311921-c3400ca199e7?w=500&h=500&fit=crop'
   },
   {
     name: 'Canh Chua Tôm',
@@ -84,8 +126,8 @@ const menus = [
     isSpicy: true,
     preparationTime: 18,
     category: 'Canh & Súp',
+    imageUrl: 'https://images.unsplash.com/photo-1609501676725-7186f017a4b0?w=500&h=500&fit=crop'
   },
-  // Cơm
   {
     name: 'Cơm Tấm Sườn Nướng',
     description: 'Cơm tấm kỵ, sườn nướng, trứng',
@@ -95,6 +137,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 15,
     category: 'Cơm',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=500&fit=crop'
   },
   {
     name: 'Cơm Gà Hoa Tây',
@@ -105,6 +148,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 20,
     category: 'Cơm',
+    imageUrl: 'https://images.unsplash.com/photo-1609335314727-a542d1b9b6b0?w=500&h=500&fit=crop'
   },
   {
     name: 'Cơm Tộp Mâm',
@@ -115,8 +159,8 @@ const menus = [
     isSpicy: false,
     preparationTime: 10,
     category: 'Cơm',
+    imageUrl: 'https://images.unsplash.com/photo-1609301869903-f4b7b5fe229c?w=500&h=500&fit=crop'
   },
-  // Mì & Bún
   {
     name: 'Phở Bò',
     description: 'Phở tươi, thịt bò nạm, nước dùng',
@@ -126,16 +170,18 @@ const menus = [
     isSpicy: false,
     preparationTime: 12,
     category: 'Mì & Bún',
+    imageUrl: 'https://images.unsplash.com/photo-1569718212b34293a32a9f3e6c69dd1f1ae9e96e?w=500&h=500&fit=crop'
   },
   {
     name: 'Bún Riêu Cua',
-    description: 'Bún, nướng riêu cua cà chua',
+    description: 'Bún, nước riêu cua cà chua',
     price: 45000,
     calories: 320,
     isVegan: false,
     isSpicy: true,
     preparationTime: 15,
     category: 'Mì & Bún',
+    imageUrl: 'https://images.unsplash.com/photo-1596855927850-ae3bfb17ea10?w=500&h=500&fit=crop'
   },
   {
     name: 'Mì Xào Hải Sản',
@@ -146,8 +192,8 @@ const menus = [
     isSpicy: true,
     preparationTime: 18,
     category: 'Mì & Bún',
+    imageUrl: 'https://images.unsplash.com/photo-1583521214271-41b2a1443f9f?w=500&h=500&fit=crop'
   },
-  // Thịt
   {
     name: 'Thịt Xiên Nướng',
     description: 'Thịt lợn nướng, tỏi, tiêu',
@@ -157,6 +203,7 @@ const menus = [
     isSpicy: true,
     preparationTime: 20,
     category: 'Thịt',
+    imageUrl: 'https://images.unsplash.com/photo-1599599810694-e3f08b7dff18?w=500&h=500&fit=crop'
   },
   {
     name: 'Bò Nướng Muối Ớt',
@@ -167,6 +214,7 @@ const menus = [
     isSpicy: true,
     preparationTime: 25,
     category: 'Thịt',
+    imageUrl: 'https://images.unsplash.com/photo-1599599810983-90a6fc8e9b7a?w=500&h=500&fit=crop'
   },
   {
     name: 'Gà Nướng Sả',
@@ -177,8 +225,8 @@ const menus = [
     isSpicy: false,
     preparationTime: 22,
     category: 'Thịt',
+    imageUrl: 'https://images.unsplash.com/photo-1596740505207-eb995a837f50?w=500&h=500&fit=crop'
   },
-  // Hải sản
   {
     name: 'Tôm Nướng Muối',
     description: 'Tôm tươi nướng, muối tiêu',
@@ -188,6 +236,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 18,
     category: 'Hải Sản',
+    imageUrl: 'https://images.unsplash.com/photo-1599599810922-c35521bb037b?w=500&h=500&fit=crop'
   },
   {
     name: 'Cua Nướng Dừa',
@@ -198,6 +247,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 25,
     category: 'Hải Sản',
+    imageUrl: 'https://images.unsplash.com/photo-1599599909612-a36a32e0e5c0?w=500&h=500&fit=crop'
   },
   {
     name: 'Cá Nướng Giấy',
@@ -208,8 +258,8 @@ const menus = [
     isSpicy: true,
     preparationTime: 20,
     category: 'Hải Sản',
+    imageUrl: 'https://images.unsplash.com/photo-1599599810744-1b6f7e6eb3e1?w=500&h=500&fit=crop'
   },
-  // Rau & Chay
   {
     name: 'Rau Luộc Nước Mắm',
     description: 'Rau xanh luộc, nước mắm tỏi',
@@ -219,6 +269,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 5,
     category: 'Rau & Chay',
+    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=500&h=500&fit=crop'
   },
   {
     name: 'Đậu Phụ Chiên',
@@ -229,6 +280,7 @@ const menus = [
     isSpicy: true,
     preparationTime: 12,
     category: 'Rau & Chay',
+    imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&h=500&fit=crop'
   },
   {
     name: 'Canh Rau Cải',
@@ -239,8 +291,8 @@ const menus = [
     isSpicy: false,
     preparationTime: 10,
     category: 'Rau & Chay',
+    imageUrl: 'https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=500&h=500&fit=crop'
   },
-  // Đồ uống
   {
     name: 'Nước Cam Tươi',
     description: 'Nước cam vắt tươi, không đường',
@@ -250,6 +302,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 3,
     category: 'Đồ Uống',
+    imageUrl: 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=500&h=500&fit=crop'
   },
   {
     name: 'Cà Phê Đen',
@@ -260,6 +313,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 5,
     category: 'Đồ Uống',
+    imageUrl: 'https://images.unsplash.com/photo-1559518773-7c1f78ca6e38?w=500&h=500&fit=crop'
   },
   {
     name: 'Trà Đá',
@@ -270,6 +324,7 @@ const menus = [
     isSpicy: false,
     preparationTime: 2,
     category: 'Đồ Uống',
+    imageUrl: 'https://images.unsplash.com/photo-1597318866302-02d6e53f6e13?w=500&h=500&fit=crop'
   },
 ];
 
@@ -279,7 +334,6 @@ async function seed() {
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB\n');
 
-    // Get admin account for createdBy field
     const admin = await Admin.findOne();
     if (!admin) {
       throw new Error('No admin account found. Please run "npm run seed" first.');
@@ -287,7 +341,6 @@ async function seed() {
     const adminId = admin._id;
     console.log(`✅ Using admin: ${admin.username}\n`);
 
-    // ============ SEED CATEGORIES ============
     console.log('📝 Seeding Categories...');
     const categoryMap = {};
     
@@ -311,14 +364,19 @@ async function seed() {
     }
     console.log('\n');
 
-    // ============ SEED MENUS ============
-    console.log('📝 Seeding Menu Items...');
+    console.log('📝 Seeding Menu Items with Images...\n');
     
     for (const menuData of menus) {
       const existing = await Menu.findOne({ name: menuData.name });
       if (existing) {
         console.log(`⚠️  Menu exists: ${menuData.name}`);
       } else {
+        let menuImage = null;
+        
+        if (menuData.imageUrl) {
+          menuImage = await uploadImageToCloudinary(menuData.imageUrl, menuData.name);
+        }
+        
         const newMenu = new Menu({
           name: menuData.name,
           description: menuData.description,
@@ -328,16 +386,16 @@ async function seed() {
           isVegan: menuData.isVegan,
           isSpicy: menuData.isSpicy,
           preparationTime: menuData.preparationTime,
+          image: menuImage,
           isActive: true,
           createdBy: adminId
         });
         await newMenu.save();
-        console.log(`✅ Created menu: ${menuData.name}`);
+        console.log(`✅ Created menu: ${menuData.name}\n`);
       }
     }
     console.log('\n');
 
-    // ============ SUMMARY ============
     console.log('═'.repeat(50));
     console.log('✅ Seeding completed successfully!\n');
 

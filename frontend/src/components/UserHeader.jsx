@@ -1,15 +1,12 @@
-import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useCart } from '../contexts/CartContext'
-import CheckoutOptionsModal from './CheckoutOptionsModal'
 import './UserHeader.css'
 
 function UserHeader() {
   const { user, logout } = useAuth()
   const { getTotalItems } = useCart()
   const navigate = useNavigate()
-  const [showAuthModal, setShowAuthModal] = useState(false)
 
   const handleLogout = () => {
     logout()
@@ -18,13 +15,6 @@ function UserHeader() {
 
   return (
     <header className="user-header">
-      {/* Auth Modal */}
-      <CheckoutOptionsModal 
-        isOpen={showAuthModal} 
-        onClose={() => setShowAuthModal(false)}
-        authOnly={true}
-      />
-
       <div className="header-container">
         {/* Logo/Branding */}
         <div className="header-logo">
@@ -50,16 +40,12 @@ function UserHeader() {
               )}
             </>
           ) : (
-            <button 
-              className="nav-link"
-              onClick={() => setShowAuthModal(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Giỏ hàng
+            <Link to="/cart" className="nav-link">
+              Giỏp hàng
               {getTotalItems() > 0 && (
                 <span className="cart-badge">{getTotalItems()}</span>
               )}
-            </button>
+            </Link>
           )}
         </nav>
 
@@ -73,12 +59,13 @@ function UserHeader() {
               </button>
             </div>
           ) : (
-            <button 
+            <Link
+              to="/user-login" 
               className="btn btn-primary"
-              onClick={() => setShowAuthModal(true)}
+              style={{ textDecoration: 'none' }}
             >
               Đăng nhập
-            </button>
+            </Link>
           )}
         </div>
       </div>

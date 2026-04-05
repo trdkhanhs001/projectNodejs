@@ -10,11 +10,6 @@ import './AdminCategory.css'
 function AdminCategory() {
   const { user } = useAuth()
   
-  // Debug: Log user info
-  useEffect(() => {
-    console.log('AdminCategory - Current user:', user)
-  }, [user])
-  
   // State cho danh sách danh mục
   const [categoryList, setCategoryList] = useState([])
   const [loading, setLoading] = useState(false)

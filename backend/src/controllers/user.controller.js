@@ -1,6 +1,5 @@
 const User = require('../models/user.model');
 
-// Get user profile
 exports.getProfile = async (userId) => {
   const user = await User.findById(userId).select('-password');
   return user;

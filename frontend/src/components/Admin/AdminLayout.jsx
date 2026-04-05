@@ -21,7 +21,6 @@ function AdminLayout({ children }) {
 
   return (
     <div className="admin-container">
-      {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <h2>🍽️ Restaurant</h2>
@@ -85,6 +84,14 @@ function AdminLayout({ children }) {
                 📦 Quản lý Đơn Hàng
               </Link>
             </li>
+            <li>
+              <Link 
+                to="/admin/discount-codes" 
+                className={`nav-link ${isActive('/admin/discount-codes')}`}
+              >
+                🎟️ Quản lý Mã Giảm Giá
+              </Link>
+            </li>
           </ul>
         </nav>
 
@@ -98,7 +105,6 @@ function AdminLayout({ children }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="admin-content">
         <header className="admin-header">
           <h1>Chào mừng trở lại!</h1>

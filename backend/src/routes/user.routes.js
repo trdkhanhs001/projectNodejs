@@ -3,10 +3,6 @@ const router = express.Router();
 const userController = require('../controllers/user.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 
-/**
- * GET /api/user/profile
- * Get current user profile
- */
 router.get('/profile', checkLogin, checkRole('USER'), async function (req, res, next) {
   try {
     const result = await userController.getProfile(req.user.id);
@@ -19,10 +15,6 @@ router.get('/profile', checkLogin, checkRole('USER'), async function (req, res, 
   }
 });
 
-/**
- * PUT /api/user/profile
- * Update user profile
- */
 router.put('/profile', checkLogin, checkRole('USER'), async function (req, res, next) {
   try {
     const result = await userController.updateProfile(req.user.id, req.body);
@@ -32,10 +24,6 @@ router.put('/profile', checkLogin, checkRole('USER'), async function (req, res, 
   }
 });
 
-/**
- * GET /api/user/points
- * Get current loyalty points
- */
 router.get('/points', checkLogin, checkRole('USER'), async function (req, res, next) {
   try {
     const result = await userController.getLoyaltyPoints(req.user.id);

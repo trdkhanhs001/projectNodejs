@@ -31,7 +31,7 @@ const orderSchema = new mongoose.Schema(
       default: null
     },
 
-    // ✅ THÊM MỚI: Phân biệt đặt online hay tại quán
+
     orderType: {
       type: String,
       enum: {
@@ -41,14 +41,15 @@ const orderSchema = new mongoose.Schema(
       required: [true, 'Order type is required']
     },
 
-    // Chỉ dùng khi orderType === 'DINE_IN'
+
     tableNumber: {
-      type: Number,
+      type: String,
       default: null,
-      min: [1, 'Table number must be at least 1']
+      trim: true,
+      minlength: [1, 'Table number must be at least 1 character'],
+      maxlength: [20, 'Table number must not exceed 20 characters']
     },
 
-    // Chỉ dùng khi orderType === 'ONLINE'
     deliveryAddress: {
       type: String,
       maxlength: [200, 'Delivery address must not exceed 200 characters'],
@@ -86,6 +87,12 @@ const orderSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: [0, 'Discount amount cannot be negative']
+    },
+    discountCode: {
+      type: String,
+      default: null,
+      trim: true,
+      uppercase: true
     },
     total: {
       type: Number,

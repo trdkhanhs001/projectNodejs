@@ -1,8 +1,6 @@
 // API utilities - Dùng để gọi API backend
 import axios from 'axios'
 
-// Tạo axios instance với cấu hình mặc định
-// Sử dụng relative path để lợi dụng Vite proxy trong development
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
   timeout: 10000,

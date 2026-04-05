@@ -5,8 +5,6 @@ const Order = require('../models/order.model');
 const mongoose = require('mongoose');
 const { buildSafeSearchQuery } = require('../utils/security');
 
-// ========== ADMIN PROFILE (4.1) ==========
-// Get admin profile
 exports.getProfile = async (adminId) => {
   const admin = await Admin.findById(adminId).select('-password');
   return admin;
@@ -118,7 +116,6 @@ exports.deleteUser = async (userId) => {
 };
 
 // ========== MENU MANAGEMENT (4.3) ==========
-// Get all menus with pagination
 exports.getAllMenus = async (filters = {}, page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
@@ -201,13 +198,11 @@ exports.deleteMenu = async (menuId) => {
 };
 
 // ========== ORDER MANAGEMENT (4.4) ==========
-// Get all orders with filters
 exports.getAllOrders = async (filters = {}, page = 1, limit = 10) => {
   const skip = (page - 1) * limit;
 
   const query = {};
 
-  // Filter by status
   if (filters.status) {
     if (Array.isArray(filters.status)) {
       query.status = { $in: filters.status };
@@ -216,7 +211,6 @@ exports.getAllOrders = async (filters = {}, page = 1, limit = 10) => {
     }
   }
 
-  // Filter by date range
   if (filters.startDate || filters.endDate) {
     query.createdAt = {};
     if (filters.startDate) {

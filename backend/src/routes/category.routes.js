@@ -4,10 +4,6 @@ const categoryController = require('../controllers/category.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-/**
- * GET /api/category
- * Get all categories (public)
- */
 router.get('/', async function (req, res, next) {
   try {
     const result = await categoryController.getAllCategories();
@@ -17,10 +13,6 @@ router.get('/', async function (req, res, next) {
   }
 });
 
-/**
- * GET /api/category/:id
- * Get category by ID (public)
- */
 router.get('/:id', async function (req, res, next) {
   try {
     const result = await categoryController.getCategoryById(req.params.id);
@@ -33,11 +25,6 @@ router.get('/:id', async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/category
- * Create new category - requires admin
- * Body: form-data { name, description?, image?, displayOrder?, isActive? }
- */
 router.post('/', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
     const result = await categoryController.createCategory(req.body, req.user.id, req.file);
@@ -47,11 +34,6 @@ router.post('/', checkLogin, checkRole('ADMIN'), upload.single('image'), async f
   }
 });
 
-/**
- * PUT /api/category/:id
- * Update category - requires admin
- * Body: form-data { name?, description?, displayOrder?, isActive?, image? }
- */
 router.put('/:id', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
     const result = await categoryController.updateCategory(req.params.id, req.body, req.user.id, req.file);
@@ -64,10 +46,6 @@ router.put('/:id', checkLogin, checkRole('ADMIN'), upload.single('image'), async
   }
 });
 
-/**
- * DELETE /api/category/:id
- * Soft delete category - requires admin
- */
 router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await categoryController.deleteCategory(req.params.id);

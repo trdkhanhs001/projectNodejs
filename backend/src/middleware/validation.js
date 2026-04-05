@@ -1,8 +1,3 @@
-/**
- * Validate request data
- * @param {object} schema - Joi schema
- * @param {string} source - Data source (body, query, params)
- */
 const validateRequest = (schema, source = 'body') => {
   return (req, res, next) => {
     const data = req[source];

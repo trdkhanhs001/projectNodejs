@@ -4,10 +4,6 @@ const menuController = require('../controllers/menu.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-/**
- * GET /api/menu
- * Get all menu items (public, active only)
- */
 router.get('/', async function (req, res, next) {
   try {
     const result = await menuController.getAllMenus();
@@ -17,10 +13,6 @@ router.get('/', async function (req, res, next) {
   }
 });
 
-/**
- * GET /api/menu/:id
- * Get menu item by ID (public)
- */
 router.get('/:id', async function (req, res, next) {
   try {
     const result = await menuController.getMenuById(req.params.id);
@@ -33,11 +25,6 @@ router.get('/:id', async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/menu
- * Create new menu item - requires admin
- * Body: form-data { name, description, ingredients?, price, category, image? }
- */
 router.post('/', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
     const result = await menuController.createMenu(req.body, req.user.id, req.file);
@@ -47,11 +34,6 @@ router.post('/', checkLogin, checkRole('ADMIN'), upload.single('image'), async f
   }
 });
 
-/**
- * PUT /api/menu/:id
- * Update menu item - requires admin
- * Body: form-data { name?, description?, ingredients?, price?, category?, preparationTime?, isActive?, image? }
- */
 router.put('/:id', checkLogin, checkRole('ADMIN'), upload.single('image'), async function (req, res, next) {
   try {
     const result = await menuController.updateMenu(req.params.id, req.body, req.user.id, req.file);
@@ -64,10 +46,6 @@ router.put('/:id', checkLogin, checkRole('ADMIN'), upload.single('image'), async
   }
 });
 
-/**
- * DELETE /api/menu/:id
- * Soft delete menu item - requires admin
- */
 router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await menuController.deleteMenu(req.params.id);

@@ -1,6 +1,5 @@
 const Joi = require('joi');
 
-// Auth validation schemas
 const authSchemas = {
   login: Joi.object({
     username: Joi.string().alphanum().min(3).max(30).required(),
@@ -73,12 +72,6 @@ const orderSchemas = {
   })
 };
 
-/**
- * Validate request data
- * @param {object} data - Data to validate
- * @param {object} schema - Joi schema
- * @returns {object} - { error, value }
- */
 const validate = (data, schema) => {
   return schema.validate(data, {
     abortEarly: false,

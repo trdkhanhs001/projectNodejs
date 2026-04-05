@@ -1,7 +1,6 @@
 const Category = require('../models/category.model');
 const cloudinary = require('../config/cloudinary');
 
-// Get all categories
 exports.getAllCategories = async () => {
   const categories = await Category.find({ isDeleted: false });
   return categories;

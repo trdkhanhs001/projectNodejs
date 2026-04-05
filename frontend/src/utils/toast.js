@@ -1,8 +1,3 @@
-/**
- * Toast Notification Utility
- * Shows temporary notifications without blocking user interaction
- */
-
 const showToast = (message, type = 'info', duration = 3000) => {
   const toastContainer = document.getElementById('toast-container') || createToastContainer()
   

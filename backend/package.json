@@ -11,6 +11,7 @@
     "seed:staff": "node scripts/seedStaff.js",
     "seed:menu": "node scripts/seedMenu.js",
     "seed:tables": "node scripts/seedTables.js",
+    "update:images": "node scripts/updateMenuImages.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
@@ -21,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.6.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.9.0",
     "cors": "^2.8.5",

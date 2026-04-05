@@ -1,8 +1,3 @@
-/**
- * Joi Validation Schemas
- * Centralized validation rules for request bodies
- */
-
 const Joi = require('joi');
 
 const ValidationSchemas = {

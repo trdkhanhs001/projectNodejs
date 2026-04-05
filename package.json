@@ -22,5 +22,8 @@
     "full-stack"
   ],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2"
+  }
 }

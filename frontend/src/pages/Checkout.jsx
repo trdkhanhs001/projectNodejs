@@ -5,7 +5,6 @@ import { useCart } from '../contexts/CartContext'
 import { useAuth } from '../contexts/AuthContext'
 import apiClient from '../utils/apiClient'
 import showToast from '../utils/toast'
-import './Checkout.css'
 
 function Checkout() {
   const navigate = useNavigate()
@@ -163,117 +162,194 @@ function Checkout() {
 
   if (cartItems.length === 0) {
     return (
-      <div className="checkout-page">
+      <div className="min-h-screen bg-gray-50">
         <UserHeader />
-        <div className="empty">
-          <h2>Giỏ hàng trống</h2>
-          <button onClick={() => navigate('/')}>Quay lại</button>
+        <div className="max-w-7xl mx-auto px-4 py-12 flex flex-col items-center justify-center min-h-[60vh]">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Giỏ hàng trống</h2>
+          <button 
+            onClick={() => navigate('/')}
+            className="px-6 py-3 bg-purple-500 text-white font-semibold rounded-lg hover:bg-purple-600 transition"
+          >
+            ← Quay lại
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="checkout-page">
+    <div className="min-h-screen bg-gray-50">
       <UserHeader />
 
-      <div className="checkout-container">
-        <h1>💳 Thanh toán</h1>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold text-gray-900 mb-8">💳 Thanh Toán</h1>
 
-        <div className="checkout-content">
-          {/* FORM */}
-          <form onSubmit={handleSubmit} className="card">
-            <h3>Thông tin khách hàng</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* FORM - Main Content */}
+          <form onSubmit={handleSubmit} className="lg:col-span-3">
+            <div className="bg-white rounded-xl shadow-md p-6 space-y-6">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Thông Tin Khách Hàng</h3>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Tên <span className="text-red-600">*</span>
+                    </label>
+                    <input 
+                      name="name" 
+                      value={orderData.name} 
+                      onChange={handleChange} 
+                      placeholder="Nhập tên của bạn" 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
 
-            <label>Tên <span className="required">*</span></label>
-            <input 
-              name="name" 
-              value={orderData.name} 
-              onChange={handleChange} 
-              placeholder="Nhập tên của bạn" 
-              required
-            />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Email <span className="text-red-600">*</span>
+                    </label>
+                    <input 
+                      name="email" 
+                      type="email"
+                      value={orderData.email} 
+                      onChange={handleChange} 
+                      placeholder="Nhập email của bạn" 
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
 
-            <label>Email <span className="required">*</span></label>
-            <input 
-              name="email" 
-              type="email"
-              value={orderData.email} 
-              onChange={handleChange} 
-              placeholder="Nhập email của bạn" 
-              required
-            />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Số Điện Thoại <span className="text-red-600">*</span>
+                    </label>
+                    <input
+                      name="phone"
+                      value={orderData.phone}
+                      onChange={handleChange}
+                      placeholder="Nhập 10-11 chữ số"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
 
-            <label>Số điện thoại <span className="required">*</span></label>
-            <input
-              name="phone"
-              value={orderData.phone}
-              onChange={handleChange}
-              placeholder="Nhập 10-11 chữ số"
-              required
-            />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Địa Chỉ Giao Hàng <span className="text-red-600">*</span>
+                    </label>
+                    <textarea
+                      name="address"
+                      value={orderData.address}
+                      onChange={handleChange}
+                      placeholder="Nhập địa chỉ giao hàng"
+                      rows="3"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      required
+                    />
+                  </div>
 
-            <label>Địa chỉ giao hàng <span className="required">*</span></label>
-            <textarea
-              name="address"
-              value={orderData.address}
-              onChange={handleChange}
-              placeholder="Nhập địa chỉ giao hàng"
-              required
-            />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Ghi Chú (Tùy Chọn)
+                    </label>
+                    <textarea
+                      name="notes"
+                      value={orderData.notes}
+                      onChange={handleChange}
+                      placeholder="Ghi chú thêm (không bắt buộc)"
+                      rows="2"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
 
-            <label>Ghi chú (tùy chọn)</label>
-            <textarea
-              name="notes"
-              value={orderData.notes}
-              onChange={handleChange}
-              placeholder="Ghi chú thêm (không bắt buộc)"
-            />
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">
+                      Phương Thức Thanh Toán
+                    </label>
+                    <select 
+                      name="paymentMethod" 
+                      value={orderData.paymentMethod} 
+                      onChange={handleChange}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    >
+                      <option value="CASH">💵 Tiền Mặt</option>
+                      <option value="CARD">💳 Thẻ Tín Dụng</option>
+                      <option value="ONLINE">📱 Thanh Toán Online</option>
+                    </select>
+                  </div>
 
-            <label>Phương thức thanh toán</label>
-            <select name="paymentMethod" value={orderData.paymentMethod} onChange={handleChange}>
-              <option value="CASH">💵 Tiền mặt</option>
-              <option value="CARD">💳 Thẻ tín dụng</option>
-              <option value="ONLINE">📱 Thanh toán online</option>
-            </select>
+                  {/* Discount */}
+                  {isAuthenticated && availableDiscounts.length > 0 && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">
+                        🎟️ Mã Khuyến Mãi
+                      </label>
+                      <select
+                        value={selectedDiscount || ''}
+                        onChange={(e) => setSelectedDiscount(e.target.value || null)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">-- Không dùng mã --</option>
+                        {availableDiscounts.map(d => (
+                          <option key={d._id} value={d._id}>
+                            {d.code} ({d.discountType === 'PERCENT'
+                              ? d.discountValue + '%'
+                              : d.discountValue + 'đ'})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-            {/* Discount */}
-            {isAuthenticated && availableDiscounts.length > 0 && (
-              <select
-                value={selectedDiscount || ''}
-                onChange={(e) => setSelectedDiscount(e.target.value || null)}
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full px-4 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">-- Không dùng mã --</option>
-                {availableDiscounts.map(d => (
-                  <option key={d._id} value={d._id}>
-                    {d.code} ({d.discountType === 'PERCENT'
-                      ? d.discountValue + '%'
-                      : d.discountValue + 'đ'})
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <button type="submit" disabled={loading}>
-              {loading ? 'Đang xử lý...' : 'Đặt hàng'}
-            </button>
+                {loading ? '⏳ Đang xử lý...' : 'Đặt Hàng'}
+              </button>
+            </div>
           </form>
 
-          {/* SUMMARY */}
-          <div className="card">
-            <h3>Đơn hàng</h3>
+          {/* SUMMARY - Sidebar */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-xl shadow-md p-6 sticky top-24">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">📦 Tóm Tắt Đơn Hàng</h3>
 
-            {cartItems.map(i => (
-              <div key={i._id}>
-                {i.name} x{i.quantity} - {(i.price * i.quantity).toLocaleString()}đ
+              <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
+                {cartItems.map(i => (
+                  <div key={i._id} className="flex justify-between text-gray-700 text-sm">
+                    <span>{i.name} x{i.quantity}</span>
+                    <strong>{(i.price * i.quantity).toLocaleString()}đ</strong>
+                  </div>
+                ))}
               </div>
-            ))}
 
-            <hr />
-            <p>Tạm tính: {subtotal.toLocaleString()}đ</p>
-            <p>Thuế: {tax.toLocaleString()}đ</p>
-            <p>Giảm: -{discount.toLocaleString()}đ</p>
-            <h3>Tổng: {total.toLocaleString()}đ</h3>
+              <div className="border-t-2 pt-4 space-y-2">
+                <div className="flex justify-between text-gray-700">
+                  <span>Tạm tính:</span>
+                  <strong>{subtotal.toLocaleString()}đ</strong>
+                </div>
+                <div className="flex justify-between text-gray-700">
+                  <span>Thuế (10%):</span>
+                  <strong>{tax.toLocaleString()}đ</strong>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Giảm:</span>
+                    <strong>-{discount.toLocaleString()}đ</strong>
+                  </div>
+                )}
+                <div className="border-t-2 pt-3 flex justify-between items-center">
+                  <span className="font-bold text-gray-900">Tổng Cộng:</span>
+                  <strong className="text-2xl text-purple-600">{total.toLocaleString()}đ</strong>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

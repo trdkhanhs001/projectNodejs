@@ -4,11 +4,6 @@ const adminController = require('../controllers/admin.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 const { validateResult } = require('../middleware/validation');
 
-// ========== ADMIN PROFILE (4.1) ==========
-/**
- * GET /api/admin/profile
- * Get admin profile - requires admin login
- */
 router.get('/profile', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.getProfile(req.user.id);
@@ -21,10 +16,6 @@ router.get('/profile', checkLogin, checkRole('ADMIN'), async function (req, res,
   }
 });
 
-/**
- * PUT /api/admin/profile
- * Update admin profile
- */
 router.put('/profile', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.updateProfile(req.user.id, req.body);
@@ -35,10 +26,6 @@ router.put('/profile', checkLogin, checkRole('ADMIN'), async function (req, res,
 });
 
 // ========== USER MANAGEMENT (4.2) ==========
-/**
- * GET /api/admin/users
- * Get all users with filters and pagination
- */
 router.get('/users', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const { page = 1, limit = 10, role, search } = req.query;
@@ -55,10 +42,6 @@ router.get('/users', checkLogin, checkRole('ADMIN'), async function (req, res, n
   }
 });
 
-/**
- * GET /api/admin/users/:userId
- * Get specific user details
- */
 router.get('/users/:userId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.getUserDetails(req.params.userId);
@@ -68,10 +51,6 @@ router.get('/users/:userId', checkLogin, checkRole('ADMIN'), async function (req
   }
 });
 
-/**
- * POST /api/admin/users
- * Create new user (via admin)
- */
 router.post('/users', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.createUser(req.body);
@@ -81,10 +60,6 @@ router.post('/users', checkLogin, checkRole('ADMIN'), async function (req, res, 
   }
 });
 
-/**
- * PUT /api/admin/users/:userId
- * Update user
- */
 router.put('/users/:userId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.updateUser(req.params.userId, req.body);
@@ -94,10 +69,6 @@ router.put('/users/:userId', checkLogin, checkRole('ADMIN'), async function (req
   }
 });
 
-/**
- * DELETE /api/admin/users/:userId
- * Delete user
- */
 router.delete('/users/:userId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.deleteUser(req.params.userId);
@@ -108,10 +79,6 @@ router.delete('/users/:userId', checkLogin, checkRole('ADMIN'), async function (
 });
 
 // ========== MENU MANAGEMENT (4.3) ==========
-/**
- * GET /api/admin/menus
- * Get all menus with filters and pagination
- */
 router.get('/menus', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const { page = 1, limit = 10, category, search } = req.query;
@@ -128,10 +95,6 @@ router.get('/menus', checkLogin, checkRole('ADMIN'), async function (req, res, n
   }
 });
 
-/**
- * GET /api/admin/menus/:menuId
- * Get specific menu details
- */
 router.get('/menus/:menuId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.getMenuDetails(req.params.menuId);
@@ -141,10 +104,6 @@ router.get('/menus/:menuId', checkLogin, checkRole('ADMIN'), async function (req
   }
 });
 
-/**
- * POST /api/admin/menus
- * Create new menu
- */
 router.post('/menus', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.createMenu(req.body);
@@ -154,10 +113,6 @@ router.post('/menus', checkLogin, checkRole('ADMIN'), async function (req, res, 
   }
 });
 
-/**
- * PUT /api/admin/menus/:menuId
- * Update menu
- */
 router.put('/menus/:menuId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.updateMenu(req.params.menuId, req.body);
@@ -167,10 +122,6 @@ router.put('/menus/:menuId', checkLogin, checkRole('ADMIN'), async function (req
   }
 });
 
-/**
- * DELETE /api/admin/menus/:menuId
- * Delete menu
- */
 router.delete('/menus/:menuId', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await adminController.deleteMenu(req.params.menuId);
@@ -181,10 +132,6 @@ router.delete('/menus/:menuId', checkLogin, checkRole('ADMIN'), async function (
 });
 
 // ========== ORDER MANAGEMENT (4.4) ==========
-/**
- * GET /api/admin/orders
- * Get all orders with filters
- */
 router.get('/orders', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
   try {
     const { page = 1, limit = 10, status, startDate, endDate } = req.query;
@@ -203,10 +150,6 @@ router.get('/orders', checkLogin, checkRole('ADMIN', 'STAFF'), async function (r
   }
 });
 
-/**
- * GET /api/admin/orders/:orderId
- * Get order details
- */
 router.get('/orders/:orderId', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
   try {
     const result = await adminController.getOrderDetails(req.params.orderId);
@@ -216,10 +159,6 @@ router.get('/orders/:orderId', checkLogin, checkRole('ADMIN', 'STAFF'), async fu
   }
 });
 
-/**
- * PUT /api/admin/orders/:orderId/status
- * Update order status
- */
 router.put('/orders/:orderId/status', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
   try {
     const { status } = req.body;
@@ -234,10 +173,6 @@ router.put('/orders/:orderId/status', checkLogin, checkRole('ADMIN', 'STAFF'), a
   }
 });
 
-/**
- * PUT /api/admin/orders/:orderId/cancel
- * Cancel order
- */
 router.put('/orders/:orderId/cancel', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const { reason } = req.body;
@@ -250,10 +185,6 @@ router.put('/orders/:orderId/cancel', checkLogin, checkRole('ADMIN'), async func
 });
 
 // ========== DASHBOARD STATISTICS (4.6) ==========
-/**
- * GET /api/admin/dashboard/stats
- * Get dashboard statistics
- */
 router.get('/dashboard/stats', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const { range = 'month' } = req.query;

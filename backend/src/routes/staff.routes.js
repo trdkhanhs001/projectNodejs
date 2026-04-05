@@ -4,10 +4,6 @@ const staffController = require('../controllers/staff.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
-/**
- * GET /api/staff
- * Get all staff members with pagination and search - requires admin
- */
 router.get('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const { page = 1, limit = 10, search } = req.query;
@@ -32,10 +28,7 @@ router.get('/', checkLogin, checkRole('ADMIN'), async function (req, res, next) 
   }
 });
 
-/**
- * GET /api/staff/:id
- * Get staff member by ID - requires admin
- */
+
 router.get('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {  
     const result = await staffController.getStaffById(req.params.id);
@@ -48,12 +41,6 @@ router.get('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, nex
   }
 });
 
-/**
- * POST /api/staff
- * Create new staff profile - requires admin
- * Body: form-data { email, phone, fullName, position, salary, address?, avatar? }
- * Note: Staff use hardcoded POS account for login, no individual credentials
- */
 router.post('/', checkLogin, checkRole('ADMIN'), upload.single('avatar'), async function (req, res, next) {
   try {
     const result = await staffController.createStaff(req.body, req.user.id, req.file);
@@ -63,10 +50,6 @@ router.post('/', checkLogin, checkRole('ADMIN'), upload.single('avatar'), async 
   }
 });
 
-/**
- * PUT /api/staff/:id
- * Update staff profile - requires admin or staff self
- */
 router.patch('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), upload.single('avatar'), async function (req, res, next) {
   try {
     // Staff can only update their own profile
@@ -84,10 +67,6 @@ router.patch('/:id', checkLogin, checkRole('ADMIN', 'STAFF'), upload.single('ava
   }
 });
 
-/**
- * DELETE /api/staff/:id
- * Soft delete staff account - requires admin
- */
 router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
   try {
     const result = await staffController.deleteStaff(req.params.id);
@@ -100,10 +79,6 @@ router.delete('/:id', checkLogin, checkRole('ADMIN'), async function (req, res, 
   }
 });
 
-/**
- * GET /api/staff/stats/today
- * Get today's revenue statistics - accessible to staff
- */
 router.get('/stats/today', async function (req, res, next) {
   try {
     const stats = await staffController.getTodayStats();

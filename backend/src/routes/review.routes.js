@@ -3,10 +3,6 @@ const router = express.Router();
 const reviewController = require('../controllers/review.controller');
 const { checkLogin, checkRole } = require('../middleware/auth');
 
-/**
- * GET /api/review/menu/:menuId
- * Get all reviews for a menu item (public)
- */
 router.get('/menu/:menuId', async function (req, res, next) {
   try {
     const result = await reviewController.getMenuReviews(req.params.menuId);
@@ -16,10 +12,6 @@ router.get('/menu/:menuId', async function (req, res, next) {
   }
 });
 
-/**
- * GET /api/review/:id
- * Get review by ID (public)
- */
 router.get('/:id', async function (req, res, next) {
   try {
     const result = await reviewController.getReviewById(req.params.id);
@@ -32,11 +24,6 @@ router.get('/:id', async function (req, res, next) {
   }
 });
 
-/**
- * POST /api/review
- * Create new review - requires user login
- * Body: { menuId, rating, comment }
- */
 router.post('/', checkLogin, checkRole('USER'), async function (req, res, next) {
   try {
     const result = await reviewController.createReview(req.user.id, req.body);
@@ -46,10 +33,6 @@ router.post('/', checkLogin, checkRole('USER'), async function (req, res, next) 
   }
 });
 
-/**
- * PUT /api/review/:id
- * Update own review - requires user login
- */
 router.put('/:id', checkLogin, checkRole('USER'), async function (req, res, next) {
   try {
     const result = await reviewController.updateReview(req.params.id, req.user.id, req.body);
@@ -62,10 +45,6 @@ router.put('/:id', checkLogin, checkRole('USER'), async function (req, res, next
   }
 });
 
-/**
- * DELETE /api/review/:id
- * Delete own review - requires user login (or admin)
- */
 router.delete('/:id', checkLogin, checkRole('USER', 'ADMIN'), async function (req, res, next) {
   try {
     const result = await reviewController.deleteReview(req.params.id, req.user);
