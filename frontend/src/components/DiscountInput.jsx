@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { validateDiscount } from '../utils/discountApi'
 import showToast from '../utils/toast'
 
@@ -6,9 +6,23 @@ export default function DiscountInput({ orderAmount, onDiscountApplied, onDiscou
   const [discountCode, setDiscountCode] = useState('')
   const [appliedDiscount, setAppliedDiscount] = useState(null)
   const [loading, setLoading] = useState(false)
+  const autoApplyTimer = useRef(null)
+
+  // Auto-apply discount after user stops typing (1.5s debounce)
+  useEffect(() => {
+    if (appliedDiscount || !discountCode.trim()) return
+
+    clearTimeout(autoApplyTimer.current)
+    autoApplyTimer.current = setTimeout(() => {
+      handleValidateDiscount()
+    }, 1500)
+
+    return () => clearTimeout(autoApplyTimer.current)
+  }, [discountCode])
 
   const handleValidateDiscount = async (e) => {
-    e.preventDefault()
+    if (e?.preventDefault) e.preventDefault()
+    
     if (!discountCode.trim()) {
       showToast('Vui lòng nhập mã khuyến mãi', 'warning')
       return
@@ -71,47 +85,66 @@ export default function DiscountInput({ orderAmount, onDiscountApplied, onDiscou
       </div>
 
       {!appliedDiscount ? (
-        <form onSubmit={handleValidateDiscount} style={{ display: 'flex', gap: '0.5rem' }}>
-          <input
-            type="text"
-            value={discountCode}
-            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
-            placeholder="VD: WELCOME20"
-            disabled={loading}
-            style={{
-              flex: 1,
-              padding: '0.6rem 0.875rem',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--color-text)',
-              fontFamily: 'var(--font-body)',
-              fontSize: '0.875rem',
-              letterSpacing: '0.04em',
-              fontWeight: 500,
-              outline: 'none',
-              transition: 'var(--transition)',
-            }}
-            onFocus={e => {
-              e.target.style.borderColor = 'var(--color-border-focus)'
-              e.target.style.boxShadow = '0 0 0 3px rgba(212,175,100,0.1)'
-            }}
-            onBlur={e => {
-              e.target.style.borderColor = 'var(--color-border)'
-              e.target.style.boxShadow = 'none'
-            }}
-          />
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn btn-outline btn-sm"
-            style={{ whiteSpace: 'nowrap', flexShrink: 0 }}
-          >
-            {loading
-              ? <span className="spinner" style={{ fontSize: '0.85rem' }}>⏳</span>
-              : 'Áp dụng'}
-          </button>
-        </form>
+        <>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+            <div style={{ flex: 1 }}>
+              <input
+                type="text"
+                value={discountCode}
+                onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleValidateDiscount()}
+                placeholder="VD: WELCOME20"
+                disabled={loading}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 0.875rem',
+                  background: 'var(--color-surface)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-sm)',
+                  color: 'var(--color-text)',
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.04em',
+                  fontWeight: 500,
+                  outline: 'none',
+                  transition: 'var(--transition)',
+                }}
+                onFocus={e => {
+                  e.target.style.borderColor = 'var(--color-border-focus)'
+                  e.target.style.boxShadow = '0 0 0 3px rgba(212,175,100,0.1)'
+                }}
+                onBlur={e => {
+                  e.target.style.borderColor = 'var(--color-border)'
+                  e.target.style.boxShadow = 'none'
+                }}
+              />
+              <div style={{
+                fontSize: '0.7rem',
+                color: 'var(--color-text-muted)',
+                marginTop: '0.35rem',
+                letterSpacing: '0.03em',
+              }}>
+                {loading ? '⏳ Đang kiểm tra...' : '💡 Nhập mã để tự động áp dụng (hoặc bấm Enter)'}
+              </div>
+            </div>
+            {discountCode.trim() && !appliedDiscount && (
+              <button
+                type="button"
+                onClick={handleValidateDiscount}
+                disabled={loading}
+                className="btn btn-outline btn-sm"
+                style={{ 
+                  whiteSpace: 'nowrap', 
+                  flexShrink: 0,
+                  marginTop: '0px'
+                }}
+                title="Click để kiểm tra ngay"
+              >
+                {loading ? '⏳' : '✓'}
+              </button>
+            )}
+          </div>
+        </>
       ) : (
         <div style={{
           display: 'flex',
