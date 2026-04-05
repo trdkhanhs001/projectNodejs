@@ -132,8 +132,8 @@ function AdminOrders() {
                     orders.map(order => (
                       <tr key={order._id}>
                         <td><span className="order-id">{order._id.substring(0, 8)}…</span></td>
-                        <td>{order.userId?.fullName || 'Ẩn danh'}</td>
-                        <td><span className="order-amount">{parseFloat(order.totalAmount).toLocaleString('vi-VN')} đ</span></td>
+                        <td>{order.user?.fullName || order.guestName || 'Ẩn danh'}</td>
+                        <td><span className="order-amount">{parseFloat(order.total || 0).toLocaleString('vi-VN')} đ</span></td>
                         <td><StatusPill status={order.status} /></td>
                         <td>{new Date(order.createdAt).toLocaleDateString('vi-VN')}</td>
                         <td>
@@ -193,10 +193,10 @@ function AdminOrders() {
                 <div className="order-section">
                   <h4>Thông tin khách hàng</h4>
                   {[
-                    ['Tên', selectedOrder.userId?.fullName || 'Ẩn danh'],
-                    ['Email', selectedOrder.userId?.email || '—'],
-                    ['Điện thoại', selectedOrder.userId?.phone || '—'],
-                    ['Địa chỉ', selectedOrder.address || '—'],
+                    ['Tên', selectedOrder.user?.fullName || selectedOrder.guestName || 'Ẩn danh'],
+                    ['Email', selectedOrder.user?.email || selectedOrder.guestEmail || '—'],
+                    ['Điện thoại', selectedOrder.user?.phone || selectedOrder.guestPhone || '—'],
+                    ['Địa chỉ', selectedOrder.deliveryAddress || selectedOrder.guestAddress || '—'],
                   ].map(([label, value]) => (
                     <div className="info-row" key={label}>
                       <span>{label}</span>
@@ -220,10 +220,10 @@ function AdminOrders() {
                     <tbody>
                       {selectedOrder.items?.map((item, idx) => (
                         <tr key={idx}>
-                          <td>{item.menuId?.name || item.name || '—'}</td>
+                          <td>{item.menu?.name || item.name || '—'}</td>
                           <td>{item.quantity}</td>
-                          <td>{parseFloat(item.price).toLocaleString('vi-VN')} đ</td>
-                          <td><strong>{(item.quantity * item.price).toLocaleString('vi-VN')} đ</strong></td>
+                          <td>{parseFloat(item.unitPrice || 0).toLocaleString('vi-VN')} đ</td>
+                          <td><strong>{parseFloat(item.subtotal || 0).toLocaleString('vi-VN')} đ</strong></td>
                         </tr>
                       ))}
                     </tbody>
@@ -235,7 +235,7 @@ function AdminOrders() {
                   <div className="info-row large">
                     <span>Tổng tiền</span>
                     <strong style={{ color: '#e53e3e', fontSize: '18px' }}>
-                      {parseFloat(selectedOrder.totalAmount || 0).toLocaleString('vi-VN')} đ
+                      {parseFloat(selectedOrder.total || 0).toLocaleString('vi-VN')} đ
                     </strong>
                   </div>
                 </div>

@@ -130,11 +130,13 @@ const orderSchema = new mongoose.Schema(
     },
     preparedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Staff'
+      ref: 'Staff',
+      default: null
     },
     servedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Staff'
+      ref: 'Staff',
+      default: null
     },
     rating: {
       type: Number,

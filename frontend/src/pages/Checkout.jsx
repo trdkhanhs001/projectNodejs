@@ -97,7 +97,7 @@ function Checkout() {
 
       if (!isAuthenticated) {
         // Online guest order - requires full info
-        const res = await apiClient.post('/order', {
+        const res = await apiClient.post('/order/guest', {
           orderType: 'ONLINE',
           items: cartItems.map(i => ({
             menuId: i._id,
@@ -107,16 +107,15 @@ function Checkout() {
           guestEmail: orderData.email,
           guestPhone: orderData.phone,
           guestAddress: orderData.address,
-          deliveryAddress: orderData.address,
           notes: orderData.notes,
           paymentMethod: orderData.paymentMethod,
           discountCode: appliedDiscount?.code || null
         })
 
-        const orderId = res.data._id
+        const orderId = res.data.order._id
         
         // Create payment for guest order
-        if (res.data.paymentMethod !== 'CASH') {
+        if (orderData.paymentMethod !== 'CASH') {
           await createPayment(orderId, total, orderData.paymentMethod)
         }
 
@@ -124,7 +123,6 @@ function Checkout() {
       } else {
         // Authenticated user order
         const res = await apiClient.post('/order', {
-          orderType: 'ONLINE',
           items: cartItems.map(i => ({
             menuId: i._id,
             quantity: i.quantity
@@ -133,25 +131,15 @@ function Checkout() {
           notes: orderData.notes,
           paymentMethod: orderData.paymentMethod,
           discountCode: appliedDiscount?.code || null,
-          discountAmount: discount,
           subtotal,
-          tax,
-          total
+          tax
         })
 
         const orderId = res.data._id
 
-        // Apply discount if exists
-        if (appliedDiscount?.code) {
-          // The discount is already applied via API
-        }
-
-        // Create payment
+        // Create payment if not cash
         if (orderData.paymentMethod !== 'CASH') {
-          const paymentRes = await createPayment(orderId, total, orderData.paymentMethod)
-          if (!paymentRes.success) {
-            showToast('⚠️ Lệnh thanh toán thất bại, nhưng đơn hàng đã được tạo', 'warning')
-          }
+          await createPayment(orderId, total, orderData.paymentMethod)
         }
 
         showToast(`✅ Đơn hàng #${res.data.orderNumber} được tạo thành công!`, 'success')

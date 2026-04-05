@@ -223,7 +223,13 @@ exports.getAllOrders = async (filters = {}, page = 1, limit = 10) => {
 
   const orders = await Order.find(query)
     .populate('user', 'username email fullName')
-    .populate('items')
+    .populate({
+      path: 'items',
+      populate: {
+        path: 'menu',
+        select: 'name price'
+      }
+    })
     .skip(skip)
     .limit(limit)
     .sort({ createdAt: -1 });
@@ -252,7 +258,7 @@ exports.getOrderDetails = async (orderId) => {
 };
 
 // Update order status
-exports.updateOrderStatus = async (orderId, newStatus) => {
+exports.updateOrderStatus = async (orderId, newStatus, staffId = null) => {
   const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'CANCELLED', 'COMPLETED'];
   
   if (!validStatuses.includes(newStatus)) {
@@ -264,12 +270,14 @@ exports.updateOrderStatus = async (orderId, newStatus) => {
 
   order.status = newStatus;
   
-  // Set timestamps for status transitions
-  if (newStatus === 'PREPARING') {
-    order.preparedBy = order.preparedBy || new Date();
+  // Set staff references for status transitions (only set if not already set)
+  if (newStatus === 'PREPARING' && staffId && !order.preparedBy) {
+    order.preparedBy = staffId;
+  }
+  if (newStatus === 'READY' && staffId && !order.servedBy) {
+    order.servedBy = staffId;
   }
   if (newStatus === 'DELIVERED' || newStatus === 'COMPLETED') {
-    order.servedBy = order.servedBy || new Date();
     order.completedAt = new Date();
   }
 

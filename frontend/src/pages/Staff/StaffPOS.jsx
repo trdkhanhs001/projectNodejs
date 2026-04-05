@@ -401,12 +401,32 @@ function StaffPOS() {
             </div>
 
             <div>
-              <select className="status-filter" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
-                <option value="PENDING">⏳ Chờ Xác Nhận</option>
-                <option value="CONFIRMED">✔️ Đã Xác Nhận</option>
-                <option value="PREPARING">🍳 Đang Chuẩn Bị</option>
-                <option value="READY">✅ Sẵn Sàng</option>
-              </select>
+              <div className="status-filter-buttons">
+                <button 
+                  className={`filter-btn ${filterStatus === 'PENDING' ? 'active' : ''}`}
+                  onClick={() => setFilterStatus('PENDING')}
+                >
+                  ⏳ Chờ Xác Nhận
+                </button>
+                <button 
+                  className={`filter-btn ${filterStatus === 'CONFIRMED' ? 'active' : ''}`}
+                  onClick={() => setFilterStatus('CONFIRMED')}
+                >
+                  ✔️ Đã Xác Nhận
+                </button>
+                <button 
+                  className={`filter-btn ${filterStatus === 'PREPARING' ? 'active' : ''}`}
+                  onClick={() => setFilterStatus('PREPARING')}
+                >
+                  🍳 Đang Chuẩn Bị
+                </button>
+                <button 
+                  className={`filter-btn ${filterStatus === 'READY' ? 'active' : ''}`}
+                  onClick={() => setFilterStatus('READY')}
+                >
+                  ✅ Sẵn Sàng
+                </button>
+              </div>
             </div>
 
             <div className="process-layout">

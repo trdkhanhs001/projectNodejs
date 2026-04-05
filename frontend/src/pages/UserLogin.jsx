@@ -102,37 +102,6 @@ function UserLogin() {
       </AuthCard>
     </AuthContainer>
   )
-} 
-              className="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-lg hover:shadow-lg transition-all disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? '⏳ Đang xác thực...' : '✅ Đăng nhập'}
-            </button>
-
-            <button 
-              type="button" 
-              className="w-full mt-3 px-4 py-3 bg-gray-200 text-gray-800 font-semibold rounded-lg hover:bg-gray-300 transition-all disabled:opacity-50"
-              onClick={handleBackToCredentials}
-              disabled={loading}
-            >
-              ← Quay Lại
-            </button>
-
-            <p className="text-xs text-gray-500 mt-5 text-center">
-              Không nhận được mã? <button onClick={(e) => {
-                e.preventDefault()
-                handleBackToCredentials()
-              }} className="text-purple-600 font-semibold hover:underline bg-transparent border-none cursor-pointer">Gửi lại</button>
-            </p>
-          </form>
-        )}
-
-        <div className="mt-8 pt-5 border-t border-gray-200 text-center text-xs text-gray-500">
-          © 2024 Restaurant Management System
-        </div>
-      </AuthCard>
-    </AuthContainer>
-  )
 }
 
 export default UserLogin

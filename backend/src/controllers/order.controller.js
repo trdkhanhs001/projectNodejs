@@ -4,18 +4,31 @@ const Menu = require('../models/menu.model');
 const User = require('../models/user.model');
 const Cart = require('../models/cart.model');
 const DiningTable = require('../models/diningTable.model');
+const Discount = require('../models/discount.models');
 
 exports.getAllOrders = async () => {
   const orders = await Order.find({ isDeleted: false })
     .populate('user', 'fullName email phone')
-    .populate('items')
+    .populate({
+      path: 'items',
+      populate: {
+        path: 'menu',
+        select: 'name price'
+      }
+    })
     .sort({ createdAt: -1 });
   return orders;
 };
 
 exports.getUserOrders = async (userId) => {
   const orders = await Order.find({ user: userId, isDeleted: false })
-    .populate('items')
+    .populate({
+      path: 'items',
+      populate: {
+        path: 'menu',
+        select: 'name price'
+      }
+    })
     .sort({ createdAt: -1 });
   return orders;
 };
@@ -23,7 +36,13 @@ exports.getUserOrders = async (userId) => {
 exports.getStaffOrders = async (staffId) => {
   const orders = await Order.find({ assignedStaff: staffId, isDeleted: false })
     .populate('user', 'fullName email phone')
-    .populate('items')
+    .populate({
+      path: 'items',
+      populate: {
+        path: 'menu',
+        select: 'name price'
+      }
+    })
     .sort({ createdAt: -1 });
   return orders;
 };
@@ -32,14 +51,20 @@ exports.getStaffOrders = async (staffId) => {
 exports.getOrderById = async (id, user) => {
   const order = await Order.findById(id)
     .populate('user', 'fullName email phone')
-    .populate('items');
+    .populate({
+      path: 'items',
+      populate: {
+        path: 'menu',
+        select: 'name price'
+      }
+    });
 
   if (!order || order.isDeleted) {
     return null;
   }
 
   // Check access: user, admin, or assigned staff
-  if (user.role === 'USER' && order.user.toString() !== user.id) {
+  if (user.role === 'USER' && order.user && order.user.toString() !== user.id) {
     return null;
   }
   if (user.role === 'STAFF' && (!order.assignedStaff || order.assignedStaff.toString() !== user.id)) {
@@ -51,27 +76,25 @@ exports.getOrderById = async (id, user) => {
 
 // Create new order from cart
 exports.createOrder = async (userId, data) => {
-  const { deliveryAddress, deliveryPhone, notes, paymentMethod } = data;
+  const { items, deliveryAddress, notes, paymentMethod, discountCode, subtotal, tax } = data;
 
-  // Get user's cart
-  const cart = await Cart.findOne({ user: userId }).populate('items.menu');
-  
-  if (!cart || cart.items.length === 0) {
-    throw new Error('Cart is empty');
+  // Validate items
+  if (!items || items.length === 0) {
+    throw new Error('Order items required');
   }
 
   // Create order items
-  let totalPrice = 0;
+  let calculatedSubtotal = 0;
   const orderItems = [];
 
-  for (const cartItem of cart.items) {
-    const menuItem = await Menu.findById(cartItem.menu._id);
+  for (const cartItem of items) {
+    const menuItem = await Menu.findById(cartItem.menuId);
     if (!menuItem) {
       throw new Error(`Menu item not found`);
     }
 
     const itemPrice = menuItem.price * cartItem.quantity;
-    totalPrice += itemPrice;
+    calculatedSubtotal += itemPrice;
 
     const orderItem = new OrderItem({
       menu: menuItem._id,
@@ -84,6 +107,54 @@ exports.createOrder = async (userId, data) => {
     orderItems.push(orderItem._id);
   }
 
+  // Process discount code
+  let discountAmount = 0;
+  let discountPercent = 0;
+  let validatedDiscount = null;
+
+  if (discountCode) {
+    const discount = await Discount.findOne({
+      code: discountCode.toUpperCase(),
+      isDeleted: false,
+      status: 'ACTIVE'
+    });
+
+    if (discount) {
+      const now = new Date();
+      if (now > discount.endDate) {
+        throw new Error('This discount code has expired');
+      }
+      if (now < discount.startDate) {
+        throw new Error('This discount code is not yet valid');
+      }
+      if (discount.usageLimit && discount.usedCount >= discount.usageLimit) {
+        throw new Error('This discount code has reached its usage limit');
+      }
+      if (calculatedSubtotal < discount.minOrderAmount) {
+        throw new Error(`Minimum order amount is ${discount.minOrderAmount} to use this discount`);
+      }
+
+      // Calculate discount amount
+      if (discount.type === 'PERCENTAGE') {
+        discountPercent = discount.value;
+        discountAmount = (calculatedSubtotal * discount.value) / 100;
+        if (discount.maxDiscountAmount) {
+          discountAmount = Math.min(discountAmount, discount.maxDiscountAmount);
+        }
+      } else if (discount.type === 'FIXED') {
+        discountAmount = discount.value;
+      }
+
+      validatedDiscount = discount;
+    } else {
+      throw new Error('Invalid discount code');
+    }
+  }
+
+  // Calculate final total
+  const calculatedTax = subtotal ? tax : (calculatedSubtotal * 0.1);
+  const finalTotal = calculatedSubtotal + calculatedTax - discountAmount;
+
   // Generate order number
   const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
@@ -92,7 +163,12 @@ exports.createOrder = async (userId, data) => {
     orderNumber,
     user: userId,
     items: orderItems,
-    total: totalPrice,
+    subtotal: calculatedSubtotal,
+    tax: calculatedTax,
+    discountCode: discountCode ? discountCode.toUpperCase() : null,
+    discountAmount: discountAmount,
+    discountPercent: discountPercent,
+    total: finalTotal,
     orderType: 'ONLINE',
     deliveryAddress,
     notes,
@@ -102,11 +178,22 @@ exports.createOrder = async (userId, data) => {
   });
 
   await order.save();
+  
+  // Increment discount usage count if applied
+  if (validatedDiscount) {
+    await Discount.findByIdAndUpdate(validatedDiscount._id, {
+      $inc: { usedCount: 1 }
+    });
+  }
+
   await order.populate('items');
 
   // Clear cart
-  cart.items = [];
-  await cart.save();
+  const cart = await Cart.findOne({ user: userId });
+  if (cart) {
+    cart.items = [];
+    await cart.save();
+  }
 
   return order;
 };
@@ -122,7 +209,7 @@ exports.updateOrderStatus = async (orderId, data, user) => {
 
   // Check valid status for role
   const validStatuses = {
-    'STAFF': ['CONFIRMED', 'PREPARING', 'READY', 'CANCELLED'],
+    'STAFF': ['CONFIRMED', 'PREPARING', 'READY', 'DELIVERING', 'DELIVERED', 'CANCELLED'],
     'ADMIN': ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERING', 'DELIVERED', 'CANCELLED']
   };
 
@@ -187,22 +274,22 @@ exports.updatePaymentStatus = async (orderId, data) => {
 
 // Create guest order (no login required)
 exports.createGuestOrder = async (data) => {
-  const { items, guestInfo, notes, paymentMethod, orderType, tableNumber } = data;
+  const { items, guestName, guestEmail, guestPhone, guestAddress, notes, paymentMethod, orderType, tableNumber, discountCode } = data;
 
   if (!items || items.length === 0) {
     throw new Error('Order items required');
   }
 
-  // For DINE_IN orders (staff POS), guestInfo optional
-  // For DELIVERY/TAKEAWAY orders (user checkout), guestInfo required
+  // For DINE_IN orders (staff POS), guest info optional
+  // For ONLINE orders (user checkout), guest info required
   if (orderType !== 'DINE_IN') {
-    if (!guestInfo || !guestInfo.name || !guestInfo.phone) {
-      throw new Error('Guest info (name, phone) required for delivery orders');
+    if (!guestName || !guestPhone) {
+      throw new Error('Guest name and phone are required for online orders');
     }
   }
 
   // Create order items
-  let totalPrice = 0;
+  let calculatedSubtotal = 0;
   const orderItems = [];
 
   for (const cartItem of items) {
@@ -212,7 +299,7 @@ exports.createGuestOrder = async (data) => {
     }
 
     const itemPrice = menuItem.price * cartItem.quantity;
-    totalPrice += itemPrice;
+    calculatedSubtotal += itemPrice;
 
     const orderItem = new OrderItem({
       menu: menuItem._id,
@@ -225,6 +312,54 @@ exports.createGuestOrder = async (data) => {
     orderItems.push(orderItem._id);
   }
 
+  // Process discount code
+  let discountAmount = 0;
+  let discountPercent = 0;
+  let validatedDiscount = null;
+
+  if (discountCode) {
+    const discount = await Discount.findOne({
+      code: discountCode.toUpperCase(),
+      isDeleted: false,
+      status: 'ACTIVE'
+    });
+
+    if (discount) {
+      const now = new Date();
+      if (now > discount.endDate) {
+        throw new Error('This discount code has expired');
+      }
+      if (now < discount.startDate) {
+        throw new Error('This discount code is not yet valid');
+      }
+      if (discount.usageLimit && discount.usedCount >= discount.usageLimit) {
+        throw new Error('This discount code has reached its usage limit');
+      }
+      if (calculatedSubtotal < discount.minOrderAmount) {
+        throw new Error(`Minimum order amount is ${discount.minOrderAmount} to use this discount`);
+      }
+
+      // Calculate discount amount
+      if (discount.type === 'PERCENTAGE') {
+        discountPercent = discount.value;
+        discountAmount = (calculatedSubtotal * discount.value) / 100;
+        if (discount.maxDiscountAmount) {
+          discountAmount = Math.min(discountAmount, discount.maxDiscountAmount);
+        }
+      } else if (discount.type === 'FIXED') {
+        discountAmount = discount.value;
+      }
+
+      validatedDiscount = discount;
+    } else {
+      throw new Error('Invalid discount code');
+    }
+  }
+
+  // Calculate final total (tax 10%)
+  const calculatedTax = calculatedSubtotal * 0.1;
+  const finalTotal = calculatedSubtotal + calculatedTax - discountAmount;
+
   // Generate order number
   const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
@@ -232,26 +367,38 @@ exports.createGuestOrder = async (data) => {
   const order = new Order({
     orderNumber,
     items: orderItems,
-    total: totalPrice,
-    guestName: guestInfo?.name || '',
-    guestEmail: guestInfo?.email || '',
-    guestPhone: guestInfo?.phone || '',
-    guestAddress: guestInfo?.address || '',
-    deliveryAddress: guestInfo?.address || '',
+    subtotal: calculatedSubtotal,
+    tax: calculatedTax,
+    discountCode: discountCode ? discountCode.toUpperCase() : null,
+    discountAmount: discountAmount,
+    discountPercent: discountPercent,
+    total: finalTotal,
+    guestName: guestName || '',
+    guestEmail: guestEmail || '',
+    guestPhone: guestPhone || '',
+    guestAddress: guestAddress || '',
+    deliveryAddress: guestAddress || '',
     tableNumber: tableNumber || null,
-    orderType: orderType || 'DELIVERY',
+    orderType: orderType || 'ONLINE',
     notes: notes || '',
     paymentMethod: paymentMethod || 'CASH',
-    paymentStatus: 'UNPAID',
+    paymentStatus: paymentMethod && paymentMethod.toUpperCase() !== 'CASH' ? 'PAID' : 'UNPAID',
     status: 'PENDING'
   });
 
   await order.save();
+
+  // Increment discount usage count if applied
+  if (validatedDiscount) {
+    await Discount.findByIdAndUpdate(validatedDiscount._id, {
+      $inc: { usedCount: 1 }
+    });
+  }
+
   await order.populate('items');
 
   // Mark table as occupied if DINE_IN order
   if (orderType === 'DINE_IN' && tableNumber) {
-    // Normalize table number - trim whitespace
     const normalizedTableNum = String(tableNumber).trim();
     await DiningTable.findOneAndUpdate(
       { tableNumber: normalizedTableNum },

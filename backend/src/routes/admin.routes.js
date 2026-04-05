@@ -166,14 +166,14 @@ router.put('/orders/:orderId/status', checkLogin, checkRole('ADMIN', 'STAFF'), a
       return res.status(400).json({ message: 'Status is required' });
     }
     
-    const result = await adminController.updateOrderStatus(req.params.orderId, status);
+    const result = await adminController.updateOrderStatus(req.params.orderId, status, req.user?.id);
     res.status(200).json({ message: 'Order status updated successfully', order: result });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
 });
 
-router.put('/orders/:orderId/cancel', checkLogin, checkRole('ADMIN'), async function (req, res, next) {
+router.put('/orders/:orderId/cancel', checkLogin, checkRole('ADMIN', 'STAFF'), async function (req, res, next) {
   try {
     const { reason } = req.body;
     
