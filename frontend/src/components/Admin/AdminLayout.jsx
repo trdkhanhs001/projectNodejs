@@ -86,10 +86,10 @@ function AdminLayout({ children }) {
             </li>
             <li>
               <Link 
-                to="/admin/discount-codes" 
-                className={`nav-link ${isActive('/admin/discount-codes')}`}
+                to="/admin/discounts" 
+                className={`nav-link ${isActive('/admin/discounts')}`}
               >
-                🎟️ Quản lý Mã Giảm Giá
+                💰 Quản lý Khuyến Mãi
               </Link>
             </li>
           </ul>

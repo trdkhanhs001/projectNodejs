@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
-const Discount = require('../models/discount.models');
+const Discount = require('../src/models/discount.models');
 
 const seedDiscounts = async () => {
   try {

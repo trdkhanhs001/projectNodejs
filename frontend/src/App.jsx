@@ -11,6 +11,7 @@ import Home from './pages/Home'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Orders from './pages/Orders'
+import PaymentHistory from './pages/PaymentHistory'
 import UserProfile from './pages/UserProfile'
 import UserLogin from './pages/UserLogin'
 import UserRegister from './pages/UserRegister'
@@ -27,7 +28,7 @@ import AdminCategory from './pages/Admin/AdminCategory'
 import AdminMenu from './pages/Admin/AdminMenu'
 import AdminOrders from './pages/Admin/AdminOrders'
 import AdminProfile from './pages/Admin/AdminProfile'
-import AdminDiscountCode from './pages/Admin/AdminDiscountCode'
+import AdminDiscounts from './pages/Admin/AdminDiscounts'
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
             <Route path="/cart" element={<RoleBasedRoute requiredRole="USER"><Cart /></RoleBasedRoute>} />
             <Route path="/checkout" element={<RoleBasedRoute requiredRole="USER"><Checkout /></RoleBasedRoute>} />
             <Route path="/orders" element={<RoleBasedRoute requiredRole="USER"><Orders /></RoleBasedRoute>} />
+            <Route path="/payment-history" element={<RoleBasedRoute requiredRole="USER"><PaymentHistory /></RoleBasedRoute>} />
             <Route path="/profile" element={<RoleBasedRoute requiredRole="USER"><UserProfile /></RoleBasedRoute>} />
 
             <Route path="/staff" element={<RoleBasedRoute requiredRole="STAFF"><StaffDashboard /></RoleBasedRoute>} />
@@ -58,7 +60,7 @@ function App() {
             <Route path="/admin/menu" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminMenu /></RoleBasedRoute></ErrorBoundary>} />
             <Route path="/admin/orders" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminOrders /></RoleBasedRoute></ErrorBoundary>} />
             <Route path="/admin/profile" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminProfile /></RoleBasedRoute></ErrorBoundary>} />
-            <Route path="/admin/discount-codes" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminDiscountCode /></RoleBasedRoute></ErrorBoundary>} />
+            <Route path="/admin/discounts" element={<ErrorBoundary><RoleBasedRoute requiredRole="ADMIN"><AdminDiscounts /></RoleBasedRoute></ErrorBoundary>} />
 
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
