@@ -526,7 +526,63 @@ function StaffPOS() {
         {/* ===== HISTORY ===== */}
         {activeTab === 'history' && (
           <div className="history-container">
-            <p style={{ color: '#6b7280' }}>📊 Lịch sử đơn hàng — Tính năng đang phát triển</p>
+            <div className="history-header">
+              <h2>📜 Lịch sử đơn hàng — Tất cả đơn hàng</h2>
+              <div className="history-filters">
+                <select 
+                  value={filterStatus} 
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="status-filter"
+                >
+                  <option value="PENDING">⏳ Chờ xử lý</option>
+                  <option value="CONFIRMED">✅ Đã xác nhận</option>
+                  <option value="PREPARING">👨‍🍳 Đang chuẩn bị</option>
+                  <option value="READY">📦 Sẵn sàng</option>
+                  <option value="DELIVERED">🚚 Đã giao</option>
+                  <option value="COMPLETED">✔️ Hoàn thành</option>
+                  <option value="CANCELLED">❌ Hủy</option>
+                </select>
+              </div>
+            </div>
+
+            {processedOrders.length === 0 ? (
+              <div className="empty-history">
+                <p>📭 Không có đơn hàng nào</p>
+              </div>
+            ) : (
+              <div className="orders-list">
+                {processedOrders.map(order => (
+                  <div key={order._id} className="order-history-item">
+                    <div className="order-header">
+                      <span className="order-id">#{order._id?.slice(-8).toUpperCase()}</span>
+                      <span className={`order-status status-${order.status?.toLowerCase()}`}>
+                        {order.status}
+                      </span>
+                      <span className="order-time">
+                        {new Date(order.createdAt).toLocaleTimeString('vi-VN')}
+                      </span>
+                    </div>
+                    <div className="order-details">
+                      <p><strong>Bàn:</strong> {order.tableNumber || 'Mang về'}</p>
+                      <p><strong>Địa chỉ:</strong> {order.deliveryAddress || 'Dùng tại chỗ'}</p>
+                      <p><strong>Khách:</strong> {order.user?.fullName || 'Khách lẻ'}</p>
+                      <p><strong>Số lượng:</strong> {order.items?.length || 0} món</p>
+                      <p><strong>Tổng:</strong> {order.total?.toLocaleString('vi-VN')} ₫</p>
+                      <p>
+                        <strong>Thanh toán:</strong> 
+                        <span className={`payment-badge payment-${(order.paymentStatus || 'UNPAID').toLowerCase()}`}>
+                          {order.paymentStatus === 'PAID' && '✅ Đã thanh toán'}
+                          {order.paymentStatus === 'PARTIAL' && '⚠️ Thanh toán một phần'}
+                          {order.paymentStatus === 'UNPAID' && '❌ Chưa thanh toán'}
+                          {order.paymentStatus === 'REFUNDED' && '🔄 Đã hoàn tiền'}
+                          {!order.paymentStatus && '❓ Không xác định'}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

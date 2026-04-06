@@ -8,6 +8,7 @@ const Discount = require('../models/discount.models');
 
 exports.getAllOrders = async () => {
   const orders = await Order.find({ isDeleted: false })
+    .select('+isDeleted')
     .populate('user', 'fullName email phone')
     .populate({
       path: 'items',
@@ -22,6 +23,7 @@ exports.getAllOrders = async () => {
 
 exports.getUserOrders = async (userId) => {
   const orders = await Order.find({ user: userId, isDeleted: false })
+    .select('+isDeleted')
     .populate({
       path: 'items',
       populate: {
@@ -35,6 +37,7 @@ exports.getUserOrders = async (userId) => {
 
 exports.getStaffOrders = async (staffId) => {
   const orders = await Order.find({ assignedStaff: staffId, isDeleted: false })
+    .select('+isDeleted')
     .populate('user', 'fullName email phone')
     .populate({
       path: 'items',
@@ -50,6 +53,7 @@ exports.getStaffOrders = async (staffId) => {
 // Get order by ID
 exports.getOrderById = async (id, user) => {
   const order = await Order.findById(id)
+    .select('+isDeleted')
     .populate('user', 'fullName email phone')
     .populate({
       path: 'items',
@@ -202,8 +206,10 @@ exports.createOrder = async (userId, data) => {
 exports.updateOrderStatus = async (orderId, data, user) => {
   const { status, itemId } = data;
 
-  const order = await Order.findById(orderId);
-  if (!order) {
+  const order = await Order.findById(orderId)
+    .select('+isDeleted');
+  
+  if (!order || order.isDeleted) {
     return null;
   }
 
@@ -244,6 +250,11 @@ exports.updateOrderStatus = async (orderId, data, user) => {
       order.completedAt = new Date();
     }
     
+    // Auto-mark as PAID when order is delivered or completed
+    if (status === 'DELIVERED' || status === 'COMPLETED') {
+      order.paymentStatus = 'PAID';
+    }
+    
     await order.save();
 
     // Mark table as available if order is delivered or cancelled (for DINE_IN)
@@ -263,11 +274,17 @@ exports.updateOrderStatus = async (orderId, data, user) => {
 exports.updatePaymentStatus = async (orderId, data) => {
   const { paymentStatus } = data;
 
+  // Check if order exists and is not deleted
+  const orderCheck = await Order.findById(orderId).select('+isDeleted');
+  if (!orderCheck || orderCheck.isDeleted) {
+    return null;
+  }
+
   const order = await Order.findByIdAndUpdate(
     orderId,
     { paymentStatus },
     { new: true }
-  ).populate('items');
+  ).select('+isDeleted').populate('items');
 
   return order;
 };
@@ -501,6 +518,7 @@ exports.getPendingOrders = async () => {
     status: 'PENDING',
     isDeleted: false 
   })
+    .select('+isDeleted')
     .populate('user', 'fullName email phone')
     .populate('items')
     .sort({ createdAt: -1 });
@@ -515,8 +533,15 @@ exports.getOrdersByStatus = async (statusFilter) => {
     status: { $in: statuses },
     isDeleted: false
   })
+    .select('+isDeleted')
     .populate('user', 'fullName email phone')
-    .populate('items')
+    .populate({
+      path: 'items',
+      populate: {
+        path: 'menu',
+        select: 'name price description image'
+      }
+    })
     .sort({ createdAt: -1 });
   
   return orders;
@@ -525,12 +550,12 @@ exports.getOrdersByStatus = async (statusFilter) => {
 // Get order statistics for dashboard
 exports.getOrderStats = async () => {
   const stats = {
-    total: await Order.countDocuments({ isDeleted: false }),
-    pending: await Order.countDocuments({ status: 'PENDING', isDeleted: false }),
-    confirmed: await Order.countDocuments({ status: 'CONFIRMED', isDeleted: false }),
-    preparing: await Order.countDocuments({ status: 'PREPARING', isDeleted: false }),
-    ready: await Order.countDocuments({ status: 'READY', isDeleted: false }),
-    completed: await Order.countDocuments({ status: 'DELIVERED', isDeleted: false })
+    total: await Order.countDocuments({ isDeleted: { $ne: true } }),
+    pending: await Order.countDocuments({ status: 'PENDING', isDeleted: { $ne: true } }),
+    confirmed: await Order.countDocuments({ status: 'CONFIRMED', isDeleted: { $ne: true } }),
+    preparing: await Order.countDocuments({ status: 'PREPARING', isDeleted: { $ne: true } }),
+    ready: await Order.countDocuments({ status: 'READY', isDeleted: { $ne: true } }),
+    completed: await Order.countDocuments({ status: 'DELIVERED', isDeleted: { $ne: true } })
   };
   return stats;
 };
@@ -554,7 +579,8 @@ exports.getDailySummary = async (date) => {
         $lt: nextDay
       },
       isDeleted: false
-    });
+    })
+      .select('+isDeleted');
     
     const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.total || 0), 0);
     const totalOrders = completedOrders.length;

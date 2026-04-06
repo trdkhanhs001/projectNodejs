@@ -113,8 +113,8 @@ exports.applyDiscountToOrder = async (req, res) => {
     }
 
     // Get order
-    const order = await Order.findById(orderId);
-    if (!order) {
+    const order = await Order.findById(orderId).select('+isDeleted');
+    if (!order || order.isDeleted) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'

@@ -195,8 +195,10 @@ exports.getTodayStats = async () => {
       createdAt: {
         $gte: today,
         $lt: tomorrow
-      }
-    });
+      },
+      isDeleted: { $ne: true }
+    })
+      .select('+isDeleted');
     
     const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.total || 0), 0);
     const totalOrders = completedOrders.length;

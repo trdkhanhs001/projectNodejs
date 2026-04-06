@@ -221,7 +221,11 @@ exports.getAllOrders = async (filters = {}, page = 1, limit = 10) => {
     }
   }
 
-  const orders = await Order.find(query)
+  // Ensure we filter out soft-deleted orders
+  const finalQuery = { ...query, isDeleted: { $ne: true } };
+
+  const orders = await Order.find(finalQuery)
+    .select('+isDeleted')
     .populate('user', 'username email fullName')
     .populate({
       path: 'items',
@@ -234,7 +238,7 @@ exports.getAllOrders = async (filters = {}, page = 1, limit = 10) => {
     .limit(limit)
     .sort({ createdAt: -1 });
 
-  const total = await Order.countDocuments(query);
+  const total = await Order.countDocuments(finalQuery);
 
   return {
     orders,
@@ -248,12 +252,13 @@ exports.getAllOrders = async (filters = {}, page = 1, limit = 10) => {
 // Get order details
 exports.getOrderDetails = async (orderId) => {
   const order = await Order.findById(orderId)
+    .select('+isDeleted')
     .populate('user', 'username email fullName phone')
     .populate({
       path: 'items',
       populate: { path: 'menu' }
     });
-  if (!order) throw new Error('Order not found');
+  if (!order || order.isDeleted) throw new Error('Order not found');
   return order;
 };
 
@@ -265,8 +270,8 @@ exports.updateOrderStatus = async (orderId, newStatus, staffId = null) => {
     throw new Error(`Invalid status. Allowed: ${validStatuses.join(', ')}`);
   }
 
-  const order = await Order.findById(orderId);
-  if (!order) throw new Error('Order not found');
+  const order = await Order.findById(orderId).select('+isDeleted');
+  if (!order || order.isDeleted) throw new Error('Order not found');
 
   order.status = newStatus;
   
@@ -279,6 +284,8 @@ exports.updateOrderStatus = async (orderId, newStatus, staffId = null) => {
   }
   if (newStatus === 'DELIVERED' || newStatus === 'COMPLETED') {
     order.completedAt = new Date();
+    // Auto-mark as PAID when order is delivered or completed
+    order.paymentStatus = 'PAID';
   }
 
   await order.save();
@@ -287,8 +294,8 @@ exports.updateOrderStatus = async (orderId, newStatus, staffId = null) => {
 
 // Cancel order
 exports.cancelOrder = async (orderId, reason) => {
-  const order = await Order.findById(orderId);
-  if (!order) throw new Error('Order not found');
+  const order = await Order.findById(orderId).select('+isDeleted');
+  if (!order || order.isDeleted) throw new Error('Order not found');
 
   if (['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(order.status)) {
     throw new Error(`Cannot cancel order with status: ${order.status}`);
@@ -320,8 +327,9 @@ exports.getDashboardStats = async (dateRange = 'month') => {
 
   const dateQuery = { createdAt: { $gte: startDate } };
 
-  // Revenue and orders stats
-  const orders = await Order.find(dateQuery);
+  // Revenue and orders stats (exclude soft-deleted orders)
+  const dateQuery2 = { ...dateQuery, isDeleted: { $ne: true } };
+  const orders = await Order.find(dateQuery2).select('+isDeleted');
   const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
   const totalOrders = orders.length;
   const completedOrders = orders.filter(o => o.status === 'COMPLETED' || o.status === 'DELIVERED').length;
@@ -348,7 +356,7 @@ exports.getDashboardStats = async (dateRange = 'month') => {
   });
 
   // Top menus
-  const allOrders = await Order.find(dateQuery).populate({
+  const allOrders = await Order.find(dateQuery2).select('+isDeleted').populate({
     path: 'items',
     populate: { path: 'menu' }
   });

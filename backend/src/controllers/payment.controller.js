@@ -17,8 +17,8 @@ exports.createPayment = async (req, res) => {
     }
 
     // Check if order exists and belongs to user (for non-admin)
-    const order = await Order.findById(orderId);
-    if (!order) {
+    const order = await Order.findById(orderId).select('+isDeleted');
+    if (!order || order.isDeleted) {
       return res.status(404).json({
         success: false,
         message: 'Order not found'
@@ -261,8 +261,8 @@ exports.updatePaymentStatus = async (req, res) => {
     await payment.save();
 
     // Update order's paymentStatus based on all payments
-    const order = await Order.findById(payment.order);
-    if (order) {
+    const order = await Order.findById(payment.order).select('+isDeleted');
+    if (order && !order.isDeleted) {
       const totalPaid = await Payment.aggregate([
         { $match: { order: order._id, status: 'COMPLETED' } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
@@ -330,8 +330,8 @@ exports.refundPayment = async (req, res) => {
     await payment.save();
 
     // Update order's paymentStatus
-    const order = await Order.findById(payment.order);
-    if (order) {
+    const order = await Order.findById(payment.order).select('+isDeleted');
+    if (order && !order.isDeleted) {
       const totalPaid = await Payment.aggregate([
         { $match: { order: order._id, status: 'COMPLETED' } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
